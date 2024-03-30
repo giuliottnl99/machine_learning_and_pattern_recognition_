@@ -42,16 +42,23 @@ def load(fileName):
             vectorClassesInt.append(convertFromClassNameToClassNumericIdentified(dataLine[-1]))
     return numpy.hstack(matrixResult), numpy.array(vectorClassesInt), irisArray
 
-def plotSingle_Hist(setosaArray, versicolorArray, virginicaArray):
-    plt.hist(setosaArray, bins=20, density=True, ec='black', color='red')
-    plt.hist(versicolorArray, bins=20, density=True, ec='black', color='yellow')
-    plt.hist(virginicaArray, bins=20, density=True, ec='black', color='green')
-    plt.show()
 
-def plotSingle_Hist(toPlotMatrix):
-    plt.hist(toPlotMatrix.setosaArray, bins=20, density=True, ec='black', color='red')
-    plt.hist(toPlotMatrix.versicolorArray, bins=20, density=True, ec='black', color='yellow')
-    plt.hist(toPlotMatrix.virginicaArray, bins=20, density=True, ec='black', color='green')
+def plotSingle_Hist(toPlotMatrix, label="no inserted label"):
+    plt.figure()
+    plt.xlabel(label)
+    commonVector = numpy.concatenate((toPlotMatrix.setosaArray, toPlotMatrix.versicolorArray, toPlotMatrix.virginicaArray))
+    minOfAll = min(commonVector)
+    maxOfAll = max(commonVector)
+    print(minOfAll)
+    print(maxOfAll)
+
+    intervals = numpy.linspace(float(minOfAll), float(maxOfAll), 8)
+    plt.hist(numpy.ravel(toPlotMatrix.setosaArray).astype(float), bins=intervals, density=True, ec='black', alpha = 0.4, color='red', label="setosa")
+    plt.hist(numpy.ravel(toPlotMatrix.versicolorArray).astype(float), bins=intervals, density=True, ec='black', alpha = 0.4,  color='yellow', label="versicolor")
+    plt.hist(numpy.ravel(toPlotMatrix.virginicaArray).astype(float), bins=intervals, density=True, ec='black', alpha = 0.4, color='green', label="virginica")
+
+    plt.legend()
+    plt.tight_layout()
     plt.show()
 
 
@@ -77,25 +84,27 @@ def divideArrayByHistCategory(irisArray):
 
 
 def plotAllhist(sepalLengthMatrix, sepalWidthMatrix, petalLengthMatrix, petalWidthMatrix): #toend
-    plotSingle_Hist(sepalLengthMatrix)
-    plotSingle_Hist(sepalWidthMatrix)
-    plotSingle_Hist(petalLengthMatrix)
-    plotSingle_Hist(petalWidthMatrix)
+    plotSingle_Hist(sepalLengthMatrix, label="sepal Length")
+    plotSingle_Hist(sepalWidthMatrix, label="sepal Width")
+    plotSingle_Hist(petalLengthMatrix, label="petal Length")
+    plotSingle_Hist(petalWidthMatrix, label="petal Width")
+
+
 
 
 if __name__ == '__main__':
     matrix, vector, irisArray = load(sys.argv[1])
-    print(matrix)
-    print(vector)
+    #print(matrix)
+    #print(vector)
     #plot
     sepalLengthMatrix, sepalWidthMatrix, petalLengthMatrix, petalWidthMatrix = divideArrayByHistCategory(irisArray)
     if sys.argv[2]=='histSepalLength':
-        plotSingle_Hist(sepalLengthMatrix)
+        plotSingle_Hist(sepalLengthMatrix, label="sepal Length")
     elif sys.argv[2]=='histSepalWidth':
-        plotSingle_Hist(sepalWidthMatrix)
+        plotSingle_Hist(sepalWidthMatrix, label="sepal Width")
     elif sys.argv[2]=='histPetalLength':
-        plotSingle_Hist(petalLengthMatrix)
+        plotSingle_Hist(petalLengthMatrix, label="petal Length")
     elif sys.argv[2]=='histPetalWidth':
-        plotSingle_Hist(petalWidthMatrix)
+        plotSingle_Hist(petalWidthMatrix, label="petal Width")
     elif sys.argv[2]=='allHist':
         plotAllhist(sepalLengthMatrix, sepalWidthMatrix, petalLengthMatrix, petalWidthMatrix)
