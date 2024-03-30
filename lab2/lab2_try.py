@@ -2,6 +2,7 @@ import sys
 import numpy
 import matplotlib
 import matplotlib.pyplot as plt
+import os
 
 
 class IrisSetosa:
@@ -56,10 +57,37 @@ def plotSingle_Hist(toPlotMatrix, label="no inserted label"):
     plt.hist(numpy.ravel(toPlotMatrix.setosaArray).astype(float), bins=intervals, density=True, ec='black', alpha = 0.4, color='red', label="setosa")
     plt.hist(numpy.ravel(toPlotMatrix.versicolorArray).astype(float), bins=intervals, density=True, ec='black', alpha = 0.4,  color='yellow', label="versicolor")
     plt.hist(numpy.ravel(toPlotMatrix.virginicaArray).astype(float), bins=intervals, density=True, ec='black', alpha = 0.4, color='green', label="virginica")
-
     plt.legend()
     plt.tight_layout()
+    directory = 'saved_figures/hist/'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    plt.savefig('saved_figures/hist/hist%s.pdf' % (label))
     plt.show()
+
+
+def plotSingleScatter(matrixX, matricesY, labelX, labelsY):
+    #for the given matrix to rappresent:
+    #foreach quality not passed
+    for i in range(len(matricesY)):
+        matrixY = matricesY[i]
+        labelY = labelsY[i]
+        #plot x of matrixX and y of the specific matrix of the Y
+        plt.figure()
+        plt.xlabel(labelX)
+        plt.ylabel(labelY)
+        # plt.gca().invert_yaxis()
+
+        plt.scatter(numpy.ravel(matrixX.setosaArray).astype(float), numpy.ravel(matrixY.setosaArray).astype(float), label='Setosa', color='red')
+        plt.scatter(numpy.ravel(matrixX.versicolorArray).astype(float), numpy.ravel(matrixY.versicolorArray).astype(float), label='Versicolor', color='blue')
+        plt.scatter(numpy.ravel(matrixX.virginicaArray).astype(float), numpy.ravel(matrixY.virginicaArray).astype(float), label='Virginica', color='green')
+        plt.tight_layout()
+        plt.legend()
+        directory = ('saved_figures/scatter/x%s' % labelX)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        plt.savefig('saved_figures/scatter/x%s/scatter_x%s_y%s.pdf' % (labelX, labelX, labelY))
+        plt.show()
 
 
 def divideArrayByHistCategory(irisArray):
@@ -89,6 +117,13 @@ def plotAllhist(sepalLengthMatrix, sepalWidthMatrix, petalLengthMatrix, petalWid
     plotSingle_Hist(petalLengthMatrix, label="petal Length")
     plotSingle_Hist(petalWidthMatrix, label="petal Width")
 
+def plotAllScatter(sepalLengthMatrix, sepalWidthMatrix, petalLengthMatrix, petalWidthMatrix): #toend
+    plotSingleScatter(sepalLengthMatrix, [sepalWidthMatrix, petalLengthMatrix, petalWidthMatrix], "sepal Length", ["sepal Width", "petal Length", "petal Width"])
+    plotSingleScatter(sepalWidthMatrix, [sepalLengthMatrix, petalLengthMatrix, petalWidthMatrix], "sepal Width", ["sepal Length", "petal Length", "petal Width"])
+    plotSingleScatter(petalLengthMatrix, [sepalWidthMatrix, sepalLengthMatrix, petalWidthMatrix], "petal Length", ["sepal Width", "sepal Length", "petal Width"])
+    plotSingleScatter(petalWidthMatrix, [sepalWidthMatrix, petalLengthMatrix, sepalLengthMatrix], "petal Width", ["sepal Width", "petal Length", "sepal Length"])
+
+#TODO: sepalLegthMatrix
 
 
 
@@ -108,3 +143,16 @@ if __name__ == '__main__':
         plotSingle_Hist(petalWidthMatrix, label="petal Width")
     elif sys.argv[2]=='allHist':
         plotAllhist(sepalLengthMatrix, sepalWidthMatrix, petalLengthMatrix, petalWidthMatrix)
+
+    if sys.argv[2]=='scatterSepalLength':
+        plotSingleScatter(sepalLengthMatrix, [sepalWidthMatrix, petalLengthMatrix, petalWidthMatrix], "sepal Length", ["sepal Width", "petal Length", "petal Width"])
+    elif sys.argv[2]=='scatterSepalWidth':
+        plotSingleScatter(sepalWidthMatrix, [sepalLengthMatrix, petalLengthMatrix, petalWidthMatrix], "sepal Width", ["sepal Length", "petal Length", "petal Width"])
+    elif sys.argv[2]=='scatterPetalLength':
+        plotSingleScatter(petalLengthMatrix, [sepalWidthMatrix, sepalLengthMatrix, petalWidthMatrix], "petal Length", ["sepal Width", "sepal Length", "petal Width"])
+    elif sys.argv[2]=='scatterPetalWidth':
+        plotSingleScatter(petalWidthMatrix, [sepalWidthMatrix, petalLengthMatrix, sepalLengthMatrix], "petal Width", ["sepal Width", "petal Length", "sepal Length"])
+    elif sys.argv[2]=='allScatter':
+        plotAllScatter(sepalLengthMatrix, sepalWidthMatrix, petalLengthMatrix, petalWidthMatrix)
+
+    
