@@ -124,6 +124,9 @@ def plotAllScatter(sepalLengthMatrix, sepalWidthMatrix, petalLengthMatrix, petal
     plotSingleScatter(petalWidthMatrix, [sepalWidthMatrix, petalLengthMatrix, sepalLengthMatrix], "petal Width", ["sepal Width", "petal Length", "sepal Length"])
 
 #TODO: sepalLegthMatrix
+def computeAverage(descriptorMatrix):
+    completeArray = numpy.ravel(numpy.concatenate(descriptorMatrix.setosaArray ,descriptorMatrix.versicolorArray ,descriptorMatrix.virginicaArray))
+    return completeArray.mean(1)
 
 
 
@@ -154,5 +157,11 @@ if __name__ == '__main__':
         plotSingleScatter(petalWidthMatrix, [sepalWidthMatrix, petalLengthMatrix, sepalLengthMatrix], "petal Width", ["sepal Width", "petal Length", "sepal Length"])
     elif sys.argv[2]=='allScatter':
         plotAllScatter(sepalLengthMatrix, sepalWidthMatrix, petalLengthMatrix, petalWidthMatrix)
+
+    print('Averages:')
+    print('Average for sepal length: %d' % (computeAverage(sepalLengthMatrix)))
+    print('Average for sepal width: %d' % (computeAverage(sepalWidthMatrix)))
+    print('Average for petal length: %d' % (computeAverage(petalLengthMatrix)))
+    print('Average for petal width: %d' % (computeAverage(petalWidthMatrix)))
 
     
