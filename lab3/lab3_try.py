@@ -68,11 +68,27 @@ def doPCA(dataSetMatrix, completeDataSetMatrix):
     #note: i see that only the first 2 values of the matrix are relevant, so I can get only the first 2 parts:
     #plot:
     setosaMatrix, versicolorMatrix, virginicaMatrix = divideMatrix(completeDataSetMatrix)
+    #try now if in this way it works:
+    toPojectVector = Vh.T[:, 0:2]
+    print('dimensions:')
+    print(np.array(setosaMatrix).shape)
+    print(np.array(toPojectVector).shape)
+
+    #fix here!   -> Try to use np.array!  
+    setosaReducedMatrix = np.array(setosaMatrix) @ np.array(toPojectVector)
+    versicolorReducedMatrix = versicolorMatrix @ toPojectVector
+    virginicaReducedMatrix = virginicaMatrix @ toPojectVector
     plt.figure()
-    plot(np.matrix(setosaMatrix)[:, 0], np.matrix(setosaMatrix)[:, 1], 'blue', 'setosa')
-    plot(np.matrix(versicolorMatrix)[:, 0], np.matrix(versicolorMatrix)[:, 1], 'orange', 'versicolor')
-    plot(np.matrix(virginicaMatrix)[:, 0], np.matrix(virginicaMatrix)[:, 1],'green', 'virginica')
+    plot(np.matrix(setosaReducedMatrix)[:, 0], np.matrix(setosaReducedMatrix)[:, 1], 'blue', 'setosa')
+    plot(np.matrix(versicolorReducedMatrix)[:, 0], np.matrix(versicolorReducedMatrix)[:, 1], 'orange', 'versicolor')
+    plot(np.matrix(virginicaReducedMatrix)[:, 0], np.matrix(virginicaReducedMatrix)[:, 1],'green', 'virginica')
     plt.show()
+
+    # plt.figure()
+    # plot(np.matrix(setosaMatrix)[:, 0], np.matrix(setosaMatrix)[:, 1], 'blue', 'setosa')
+    # plot(np.matrix(versicolorMatrix)[:, 0], np.matrix(versicolorMatrix)[:, 1], 'orange', 'versicolor')
+    # plot(np.matrix(virginicaMatrix)[:, 0], np.matrix(virginicaMatrix)[:, 1],'green', 'virginica')
+    # plt.show()
 
 #pass transposed matrix!
 def calculateWithinCovarianceMatrix(matrixSetosaT, matrixVersicolorT, matrixVirginicaT):
@@ -121,19 +137,19 @@ def calculateBetweenCovarianceMatrix(matrixSetosaT, matrixVersicolorT, matrixVir
 
 if __name__ == '__main__':
     dataSetMatrix, completeDataSetMatrix = load('..\lab2\iris.csv')
-    # doPCA(dataSetMatrix, completeDataSetMatrix)
+    doPCA(dataSetMatrix, completeDataSetMatrix)
 
     #issue: graph result is not the same as the wanted one. 
     #Anyway, covariance matrix is fine
 
-    matrixSetosa, matrixVersicolor, matrixVirginica = divideMatrix(completeDataSetMatrix)
-    #debug:
-    print(np.array(matrixSetosa).T)
-    withinCovMatrix = calculateWithinCovarianceMatrix(np.array(matrixSetosa).astype(float).T, np.array(matrixVersicolor).astype(float).T, np.array(matrixVirginica).astype(float).T)
-    print('within cov matrix:')
-    print(withinCovMatrix)
-    betweenCovMatrix = calculateBetweenCovarianceMatrix(np.array(matrixSetosa).astype(float).T, np.array(matrixVersicolor).astype(float).T, np.array(matrixVirginica).astype(float).T, np.array(dataSetMatrix).astype(float).T)
-    print('between cov matrix:')
-    print(betweenCovMatrix)
+    # matrixSetosa, matrixVersicolor, matrixVirginica = divideMatrix(completeDataSetMatrix)
+    # #debug:
+    # print(np.array(matrixSetosa).T)
+    # withinCovMatrix = calculateWithinCovarianceMatrix(np.array(matrixSetosa).astype(float).T, np.array(matrixVersicolor).astype(float).T, np.array(matrixVirginica).astype(float).T)
+    # print('within cov matrix:')
+    # print(withinCovMatrix)
+    # betweenCovMatrix = calculateBetweenCovarianceMatrix(np.array(matrixSetosa).astype(float).T, np.array(matrixVersicolor).astype(float).T, np.array(matrixVirginica).astype(float).T, np.array(dataSetMatrix).astype(float).T)
+    # print('between cov matrix:')
+    # print(betweenCovMatrix)
 
     #nect time: LDA directions and generalized egìigenvalue problem
