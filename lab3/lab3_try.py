@@ -100,16 +100,20 @@ def calculateWithinCovarianceMatrix(matrixSetosaT, matrixVersicolorT, matrixVirg
 def calculateBetweenCovarianceMatrix(matrixSetosaT, matrixVersicolorT, matrixVirginicaT, matrixGlobalT):
     #calculate between cov matrix:
     avgGlobal = np.mean(matrixGlobalT, axis=1)
+    avgSetosa = np.mean(matrixSetosaT, axis=1)
+    avgVersicolor = np.mean(matrixVersicolorT, axis=1)
+    avgVirginica = np.mean(matrixVirginicaT, axis=1)
+
     
     #calculate diff matrices
-    matrixDiffSetosa = matrixSetosaT - avgGlobal.reshape(avgGlobal.size, 1)
-    matrixDiffVersicolor = matrixVersicolorT - avgGlobal.reshape(avgGlobal.size, 1)
-    matrixDiffVirginica = matrixVirginicaT - avgGlobal.reshape(avgGlobal.size, 1)
+    vectorDiffSetosa = avgSetosa.reshape(avgSetosa.size, 1) - avgGlobal.reshape(avgGlobal.size, 1)
+    vectorDiffVersicolor = avgVersicolor.reshape(avgVersicolor.size, 1) - avgGlobal.reshape(avgGlobal.size, 1)
+    vectorDiffVirginica = avgVirginica.reshape(avgVirginica.size, 1) - avgGlobal.reshape(avgGlobal.size, 1)
     
     #calculate the between components of cov matrix one by one:
-    matrixPartSetosa =  matrixDiffSetosa @ matrixDiffSetosa.T
-    matrixPartVersicolor = matrixDiffVersicolor @ matrixDiffVersicolor.T
-    matrixPartVirginica = matrixDiffVirginica @ matrixDiffVirginica.T
+    matrixPartSetosa =  vectorDiffSetosa @ vectorDiffSetosa.T
+    matrixPartVersicolor = vectorDiffVersicolor @ vectorDiffVersicolor.T
+    matrixPartVirginica = vectorDiffVirginica @ vectorDiffVirginica.T
     #sum and make average:
     betweenMatrixTotal = (matrixPartSetosa*matrixPartSetosa.shape[0] + matrixPartVersicolor*matrixPartVersicolor.shape[0] + matrixPartVirginica*matrixPartVirginica.shape[0])
     betweenCovMatrix = betweenMatrixTotal / (matrixPartSetosa.shape[0] + matrixPartVersicolor.shape[0] + matrixPartVirginica.shape[0])
@@ -131,3 +135,5 @@ if __name__ == '__main__':
     betweenCovMatrix = calculateBetweenCovarianceMatrix(np.array(matrixSetosa).astype(float).T, np.array(matrixVersicolor).astype(float).T, np.array(matrixVirginica).astype(float).T, np.array(dataSetMatrix).astype(float).T)
     print('between cov matrix:')
     print(betweenCovMatrix)
+
+    #nect time: LDA directions and generalized egìigenvalue problem
