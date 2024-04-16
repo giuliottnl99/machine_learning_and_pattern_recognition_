@@ -1,6 +1,7 @@
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
+import scipy
 
 
 def load(fileName):
@@ -25,7 +26,7 @@ def divideMatrix(completeMatrixResult):
             matrixVersicolor.append(element[0:-1])
          if rowType=='Iris-virginica':
             matrixVirginica.append(element[0:-1])
-    return matrixSetosa, matrixVersicolor, matrixVirginica
+    return np.array(matrixSetosa).astype(float), np.array(matrixVersicolor).astype(float), np.array(matrixVirginica).astype(float)
 
 def getCovarianceMatrix(pythonMatrix):
     matrix = np.array(pythonMatrix).astype(float).T
@@ -73,22 +74,20 @@ def doPCA(dataSetMatrix, completeDataSetMatrix):
     print('dimensions:')
     print(np.array(setosaMatrix).shape)
     print(np.array(toPojectVector).shape)
+    print(np.array(setosaMatrix))
+    print(np.array(toPojectVector))
 
     #fix here!   -> Try to use np.array!  
     setosaReducedMatrix = np.array(setosaMatrix) @ np.array(toPojectVector)
     versicolorReducedMatrix = versicolorMatrix @ toPojectVector
     virginicaReducedMatrix = virginicaMatrix @ toPojectVector
+       
     plt.figure()
+    plt.gca().invert_yaxis()   
     plot(np.matrix(setosaReducedMatrix)[:, 0], np.matrix(setosaReducedMatrix)[:, 1], 'blue', 'setosa')
     plot(np.matrix(versicolorReducedMatrix)[:, 0], np.matrix(versicolorReducedMatrix)[:, 1], 'orange', 'versicolor')
     plot(np.matrix(virginicaReducedMatrix)[:, 0], np.matrix(virginicaReducedMatrix)[:, 1],'green', 'virginica')
     plt.show()
-
-    # plt.figure()
-    # plot(np.matrix(setosaMatrix)[:, 0], np.matrix(setosaMatrix)[:, 1], 'blue', 'setosa')
-    # plot(np.matrix(versicolorMatrix)[:, 0], np.matrix(versicolorMatrix)[:, 1], 'orange', 'versicolor')
-    # plot(np.matrix(virginicaMatrix)[:, 0], np.matrix(virginicaMatrix)[:, 1],'green', 'virginica')
-    # plt.show()
 
 #pass transposed matrix!
 def calculateWithinCovarianceMatrix(matrixSetosaT, matrixVersicolorT, matrixVirginicaT):
@@ -135,21 +134,21 @@ def calculateBetweenCovarianceMatrix(matrixSetosaT, matrixVersicolorT, matrixVir
     betweenCovMatrix = betweenMatrixTotal / (matrixPartSetosa.shape[0] + matrixPartVersicolor.shape[0] + matrixPartVirginica.shape[0])
     return betweenCovMatrix
 
+def doLDA(completeDataSetMatrix):
+    matrixSetosa, matrixVersicolor, matrixVirginica = divideMatrix(completeDataSetMatrix)
+    withinCovMatrix = calculateWithinCovarianceMatrix(np.array(matrixSetosa).astype(float).T, np.array(matrixVersicolor).astype(float).T, np.array(matrixVirginica).astype(float).T)
+    print('within cov matrix:')
+    print(withinCovMatrix)
+    betweenCovMatrix = calculateBetweenCovarianceMatrix(np.array(matrixSetosa).astype(float).T, np.array(matrixVersicolor).astype(float).T, np.array(matrixVirginica).astype(float).T, np.array(dataSetMatrix).astype(float).T)
+    print('between cov matrix:')
+    print(betweenCovMatrix)
+
+    #now we can do generalized eigenvalue problem
+    eigenValues, eigenVectorsMatrix = scipy.linalg.eigh(betweenCovMatrix, withinCovMatrix)
+
+
 if __name__ == '__main__':
     dataSetMatrix, completeDataSetMatrix = load('..\lab2\iris.csv')
     doPCA(dataSetMatrix, completeDataSetMatrix)
 
-    #issue: graph result is not the same as the wanted one. 
-    #Anyway, covariance matrix is fine
-
-    # matrixSetosa, matrixVersicolor, matrixVirginica = divideMatrix(completeDataSetMatrix)
-    # #debug:
-    # print(np.array(matrixSetosa).T)
-    # withinCovMatrix = calculateWithinCovarianceMatrix(np.array(matrixSetosa).astype(float).T, np.array(matrixVersicolor).astype(float).T, np.array(matrixVirginica).astype(float).T)
-    # print('within cov matrix:')
-    # print(withinCovMatrix)
-    # betweenCovMatrix = calculateBetweenCovarianceMatrix(np.array(matrixSetosa).astype(float).T, np.array(matrixVersicolor).astype(float).T, np.array(matrixVirginica).astype(float).T, np.array(dataSetMatrix).astype(float).T)
-    # print('between cov matrix:')
-    # print(betweenCovMatrix)
-
-    #nect time: LDA directions and generalized egìigenvalue problem
+    doLDA(completeDataSetMatrix)
