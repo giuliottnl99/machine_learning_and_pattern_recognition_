@@ -1,7 +1,8 @@
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
-import scipy
+# import scipy
+# import scipy.linalg
 
 
 def load(fileName):
@@ -143,12 +144,33 @@ def doLDA(completeDataSetMatrix):
     print('between cov matrix:')
     print(betweenCovMatrix)
 
-    #now we can do generalized eigenvalue problem
-    eigenValues, eigenVectorsMatrix = scipy.linalg.eigh(betweenCovMatrix, withinCovMatrix)
+    #now I can do generalized eigenvalue problem
+    rightSingularVectors, singularValuesWithin, _ = np.linalg.svd(withinCovMatrix)
+    singularValuesMatrixSquared = np.diag(1.0/(singularValuesWithin**0.5))
+    P1Matrix = rightSingularVectors @ singularValuesMatrixSquared @ rightSingularVectors.T
+
+    covMatrixBetweenTransformed = P1Matrix @ betweenCovMatrix @ P1Matrix.T
+    finalSingularRightsVectors, finalSingularValues, _ = np.linalg.svd(np.array(covMatrixBetweenTransformed))
+    #choose how much you should reduce:
+    finalResult = finalSingularRightsVectors[:, 0:2]
+    print(finalResult)
+
+    LDASubspaceSetosa = finalSingularRightsVectors.T @ P1Matrix @ matrixSetosa
+    LDASubspaceVersicolor = finalSingularRightsVectors.T @ P1Matrix @ matrixVersicolor
+    LDASubspaceVirginica = finalSingularRightsVectors.T @ P1Matrix @ matrixVirginica
+
+    #try to plot: will it works?
+    plt.figure()
+    plt.gca().invert_yaxis()   
+    plot(np.matrix(LDASubspaceSetosa)[:, 0], np.matrix(LDASubspaceSetosa)[:, 1], 'blue', 'setosa')
+    plot(np.matrix(LDASubspaceVersicolor)[:, 0], np.matrix(LDASubspaceVersicolor)[:, 1], 'blue', 'setosa')
+    plot(np.matrix(LDASubspaceVirginica)[:, 0], np.matrix(LDASubspaceVirginica)[:, 1], 'blue', 'setosa')
+    plt.show()
 
 
 if __name__ == '__main__':
     dataSetMatrix, completeDataSetMatrix = load('..\lab2\iris.csv')
-    doPCA(dataSetMatrix, completeDataSetMatrix)
+    # doPCA(dataSetMatrix, completeDataSetMatrix)
 
+    #now we can use LDA to improve everything:
     doLDA(completeDataSetMatrix)
