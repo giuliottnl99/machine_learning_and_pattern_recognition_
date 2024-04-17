@@ -155,22 +155,22 @@ def doLDA(completeDataSetMatrix):
     finalResult = finalSingularRightsVectors[:, 0:2]
     print(finalResult)
 
-    LDASubspaceSetosa = finalSingularRightsVectors.T @ P1Matrix @ matrixSetosa
-    LDASubspaceVersicolor = finalSingularRightsVectors.T @ P1Matrix @ matrixVersicolor
-    LDASubspaceVirginica = finalSingularRightsVectors.T @ P1Matrix @ matrixVirginica
+    LDASubspaceSetosa = finalResult.T @ P1Matrix @ matrixSetosa.T
+    LDASubspaceVersicolor = finalResult.T @ P1Matrix @ matrixVersicolor.T
+    LDASubspaceVirginica = finalResult.T @ P1Matrix @ matrixVirginica.T
 
-    #try to plot: will it works?
     plt.figure()
+    plt.gca().invert_xaxis()   
     plt.gca().invert_yaxis()   
-    plot(np.matrix(LDASubspaceSetosa)[:, 0], np.matrix(LDASubspaceSetosa)[:, 1], 'blue', 'setosa')
-    plot(np.matrix(LDASubspaceVersicolor)[:, 0], np.matrix(LDASubspaceVersicolor)[:, 1], 'blue', 'setosa')
-    plot(np.matrix(LDASubspaceVirginica)[:, 0], np.matrix(LDASubspaceVirginica)[:, 1], 'blue', 'setosa')
+    plot(np.matrix(LDASubspaceSetosa)[0, :], np.matrix(LDASubspaceSetosa)[1, :], 'blue', 'setosa')
+    plot(np.matrix(LDASubspaceVersicolor)[0, :], np.matrix(LDASubspaceVersicolor)[1, :], 'orange', 'versicolor')
+    plot(np.matrix(LDASubspaceVirginica)[0, :], np.matrix(LDASubspaceVirginica)[1, :], 'green', 'virginica')
     plt.show()
 
 
 if __name__ == '__main__':
     dataSetMatrix, completeDataSetMatrix = load('..\lab2\iris.csv')
-    # doPCA(dataSetMatrix, completeDataSetMatrix)
+    doPCA(dataSetMatrix, completeDataSetMatrix)
 
     #now we can use LDA to improve everything:
     doLDA(completeDataSetMatrix)
