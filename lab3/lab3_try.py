@@ -1,6 +1,7 @@
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
+import lab3Utils as ut
 # import scipy
 # import scipy.linalg
 
@@ -167,6 +168,13 @@ def doLDA(completeDataSetMatrix):
     plot(np.matrix(LDASubspaceVirginica)[0, :], np.matrix(LDASubspaceVirginica)[1, :], 'green', 'virginica')
     plt.show()
 
+def doBinaryClassification(completeDataSetMatrix):
+    matrixSetosa, matrixVersicolor, matrixVirginica = divideMatrix(completeDataSetMatrix)
+    trainDataVersicolor, testDataVersicolor = ut.divideSamples(matrixVersicolor)
+    trainDataVirginica, testDataVirginica = ut.divideSamples(matrixVirginica)
+    ut.plot_hist(trainDataVersicolor, 'Versicolor', trainDataVirginica, 'Virginica', 5, 'Model training set')
+    ut.plot_hist(testDataVersicolor, 'Versicolor', testDataVirginica, 'Virginica', 5, 'Model validation set')
+    plt.show()
 
 if __name__ == '__main__':
     dataSetMatrix, completeDataSetMatrix = load('..\lab2\iris.csv')
@@ -174,3 +182,5 @@ if __name__ == '__main__':
 
     #now we can use LDA to improve everything:
     doLDA(completeDataSetMatrix)
+
+    doBinaryClassification(completeDataSetMatrix)
