@@ -6,7 +6,6 @@ import pdb
 
 
 def logpdf_GAU_ND(x, mu, C):
-    # print(x)
     Cinv = np.linalg.inv(C)
     CLogDet = np.linalg.slogdet(C)[1]
     _ , CInvLogDet = np.linalg.slogdet(Cinv)
