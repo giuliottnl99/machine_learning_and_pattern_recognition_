@@ -7,19 +7,30 @@ def computeMuAndCov(arr):
     cov = ((x - mu) @ (x-mu).T) / len(arr)
     return mu, cov
 
+#dataset splitted is: [0-1-2 as name] [correspondent matrix of elements]
 def splitDataSets(fullArr, labels):
-    setosa =  []
-    versicolor = []
-    virginica = []
+    dataSetSplitted = [[], [], []]
     for  i in range(len(labels)):
         row = fullArr[:, i]
         label = labels[i]
         if label==0:
-            setosa.append(row)
+            dataSetSplitted[0].append(row)
         elif label==1:
-            versicolor.append(row)
+            dataSetSplitted[1].append(row)
         elif label==2:
-            virginica.append(row)
+            dataSetSplitted[2].append(row)
+    return dataSetSplitted    
 
-    return setosa, versicolor, virginica    
+#each class is rappresented by a row -> Each row contains mu and cov
+
+def logpdf_GAU_ND(x, mu, C):
+    Cinv = np.linalg.inv(C)
+    CLogDet = np.linalg.slogdet(C)[1]
+    _ , CInvLogDet = np.linalg.slogdet(Cinv)
+    M =  x.shape[0]
+    component1 = - (M/2)*np.log(np.pi*2)
+    component2 = -0.5 * CLogDet
+    component3 = - (1/2) * ((x - mu) @ (Cinv @(x-mu))).sum(0) #note: 
+    
+    return component1 + component2 + component3
 
