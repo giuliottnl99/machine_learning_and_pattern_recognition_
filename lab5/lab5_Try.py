@@ -92,11 +92,12 @@ if __name__ == '__main__':
     (DTR, LTR), (DVAL, LVAL) = split_DB_2to1(D, L)
 
     #first try: split dataset based on whole matrix;
-    dataSetsSplitted = splitDataSets(DVAL, LVAL)
+    dataSetsSplitted = splitDataSets(DTR, LTR)
     dataSetsSplittedTransposed = trasposeDataSetSplitted(dataSetsSplitted)
     #I think mistakes starts from here:
     muAndCovDivided = computeMuAndCovForClass(dataSetsSplittedTransposed)
     #first: compute the likelihoods:
+    #TODO: here I should pass data with the validation set! 
     scoreMatrix = computeLogLikelihoodForEachClass(dataSetsSplittedTransposed, muAndCovDivided)
     #now compute joint densities:
     SJoint = computeJointDensities(scoreMatrix)
