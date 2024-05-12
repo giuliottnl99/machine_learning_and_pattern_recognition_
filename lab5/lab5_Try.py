@@ -1,6 +1,7 @@
 import sklearn.datasets
 import numpy as np 
 import utils as ut
+import scipy
 
 def load_iris():
     D, L = sklearn.datasets.load_iris()['data'].T, sklearn.datasets.load_iris()['target']
@@ -33,34 +34,42 @@ def splitDataSets(fullArr, labels):
 
 
 def logpdf_GAU_ND(x, mu, C):
-    Cinv = np.linalg.inv(C)
-    CLogDet = np.linalg.slogdet(C)[1]
-    _ , CInvLogDet = np.linalg.slogdet(Cinv)
-    M =  x.shape[0]
-    component1 = - (M/2)*np.log(np.pi*2)
-    component2 = -0.5 * CLogDet
-    component3 = - (1/2) * ((x - mu).T @ (Cinv @(x-mu))).sum(0) #note: 
-    
-    return component1 + component2 + component3
-    
+    P = np.linalg.inv(C)
+    # return -0.5*x.shape[0]*np.log(np.pi*2) - 0.5*np.linalg.slogdet(C)[1] - 0.5 * ((x-mu).T @ (P @ (x-mu))).sum(0)
+    return -0.5*x.shape[0]*np.log(np.pi*2) - 0.5*np.linalg.slogdet(C)[1] - 0.5 * (np.array(x-mu) * (np.array(P) @ np.array(x-mu))).sum(0)    
 #return of type class -> array of likelihoods 
-def computeLogLikelihoodForEachClass(dataSetsSplitted, muAndCovDivided):
+def computeLogLikelihoodForEachClassWithClasses(dataSetsSplitted, muAndCovDivided):
     scoreMatrix = []
     for i in range(len(dataSetsSplitted)):
         classDataSet = dataSetsSplitted[i]
-        mu, cov = muAndCovDivided[i][0], muAndCovDivided[i][1]
+        mu, cov = muAndCovDivided[i][0], muAndCovDivided[i][1] #here it breaks!
         scoreMatrix.append(logpdf_GAU_ND(classDataSet, mu, cov))
     print('scoreMatrix:')
     print(scoreMatrix)
     return scoreMatrix
 
-def computeJointDensities(scoreMatrix):
-    SJoint = []
+def computeLogLikelihoodForEachClassWithoutClasses(AllSamples, muAndCovDivided):
+    scoreMatrix = []
+
+    for i in range(len(muAndCovDivided)):
+        mu, cov = muAndCovDivided[i][0], muAndCovDivided[i][1] #here it breaks!
+        scoreMatrix.append(logpdf_GAU_ND(AllSamples, mu, cov))
+    print('scoreMatrix:')
+    print(scoreMatrix)
+    return scoreMatrix
+
+
+def computeLogPosterior(logScoreMatrix, v_prior):
     #note: classData is a matrix!
-    for classData in scoreMatrix:
-        classDataToArr = classData.ravel()
-        SJoint.append(classDataToArr/classDataToArr.shape[1])
-    return SJoint
+    v_priorLog = np.log(v_prior)
+    logSJoint = logScoreMatrix + v_priorLog.reshape(v_priorLog.size, 1)
+    print('SJoint found:')
+    print(np.exp(logSJoint))
+    logSMarginalToReshape = scipy.special.logsumexp(logSJoint, axis=0)
+    logSmarginal = (logSMarginalToReshape).reshape(1, logSMarginalToReshape.size)
+    logSPost = logSJoint - logSmarginal
+    return logSPost
+
 
 #classs -> Transposed matrix
 def trasposeDataSetSplitted(dataSetSplitted):
@@ -92,22 +101,20 @@ if __name__ == '__main__':
     (DTR, LTR), (DVAL, LVAL) = split_DB_2to1(D, L)
 
     #first try: split dataset based on whole matrix;
-    dataSetsSplitted = splitDataSets(DTR, LTR)
-    dataSetsSplittedTransposed = trasposeDataSetSplitted(dataSetsSplitted)
-    #I think mistakes starts from here:
-    muAndCovDivided = computeMuAndCovForClass(dataSetsSplittedTransposed)
+    dataSetsTrainSplitted = splitDataSets(DTR, LTR)
+    dataSetsTrainSplittedTransposed = trasposeDataSetSplitted(dataSetsTrainSplitted)
+
+    muAndCovDivided = computeMuAndCovForClass(dataSetsTrainSplittedTransposed)
     #first: compute the likelihoods:
-    #TODO: here I should pass data with the validation set! 
-    scoreMatrix = computeLogLikelihoodForEachClass(dataSetsSplittedTransposed, muAndCovDivided)
-    #now compute joint densities:
-    SJoint = computeJointDensities(scoreMatrix)
-    #now compare:
-    print('SJoint found by me:')
-    print(SJoint)
-    print('SJoint proposed by corrections:')
-    print(np.load('SJoint_MVG.npy'))
+    logscoreMatrix = computeLogLikelihoodForEachClassWithoutClasses(DVAL, muAndCovDivided)
+    logPosterior = computeLogPosterior(logscoreMatrix, np.ones(3)/3.)
+    #now compare: matrices are identical!
+    # print('logPosterior found by me:')
+    # print(logPosterior)
+    # print('logPosterior solution:')
+    # print(np.load('logPosterior_MVG.npy'))
 
-
-
+    #phase 3 of lab:
+    
 
 
