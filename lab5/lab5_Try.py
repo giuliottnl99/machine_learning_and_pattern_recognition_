@@ -87,13 +87,43 @@ def computeMuAndCov(x):
     return mu, cov
 
 
-def computeMuAndCovForClass(dataSetSplitted):
+def computeMuAndCovForClass(dataSetSplitted, chosenCase='default'):
     muAndCovForElement = []
     for classParameters in dataSetSplitted:
         mu, cov = computeMuAndCov(classParameters)
-        muAndCovForElement.append([mu, cov])
+        if chosenCase=='default':
+            muAndCovForElement.append([mu, cov])
+        elif chosenCase=='Naive':
+            muAndCovForElement.append([mu, cov * np.ones(classParameters)])
     return muAndCovForElement
 
+
+def proofOfNine(posteriorProbMatrix):
+    print('posterior matrix:')
+    print(posteriorProbMatrix)
+    #sum of each element:
+    sumOfPosteriorRows = []
+    for row in posteriorProbMatrix: 
+        if (len(sumOfPosteriorRows)==0):
+            sumOfPosteriorRows.append(row)
+        else:
+            sumOfPosteriorRows += row
+    print('prove of nine: should be a matrix of all to one:') 
+    print(sumOfPosteriorRows)
+
+
+def computeAccuracy(posteriorProbMatrix, labels):
+    prevalentValueArray = []
+    for j in range(posteriorProbMatrix.shape[1]):
+        maxValueForElement = 0
+        winnerClass = None
+        for i in range(posteriorProbMatrix.shape[0]):
+            if(maxValueForElement<=posteriorProbMatrix[i][j]):
+                maxValueForElement, winnerClass = posteriorProbMatrix[i][j], i
+        prevalentValueArray.append(winnerClass)
+    #then compute accuracy:
+    accuracyArray = prevalentValueArray == labels
+    return np.count_nonzero(accuracyArray) / len(prevalentValueArray) * 100
 
 
 if __name__ == '__main__':
@@ -108,13 +138,13 @@ if __name__ == '__main__':
     #first: compute the likelihoods:
     logscoreMatrix = computeLogLikelihoodForEachClassWithoutClasses(DVAL, muAndCovDivided)
     logPosterior = computeLogPosterior(logscoreMatrix, np.ones(3)/3.)
-    #now compare: matrices are identical!
-    # print('logPosterior found by me:')
-    # print(logPosterior)
-    # print('logPosterior solution:')
-    # print(np.load('logPosterior_MVG.npy'))
+    posteriorProbMatrix = np.exp(logPosterior)
+    # proofOfNine(logPosterior)
+    accuracy = computeAccuracy(posteriorProbMatrix, LVAL)
+    print('accuracy:')
+    print(accuracy)
+    #phase 2.2 of lab: verify logPosterior is fine! 
 
-    #phase 3 of lab:
-    
+
 
 
