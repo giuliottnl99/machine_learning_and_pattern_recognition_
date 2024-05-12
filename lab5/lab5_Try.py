@@ -48,14 +48,15 @@ def computeLogLikelihoodForEachClassWithClasses(dataSetsSplitted, muAndCovDivide
     print(scoreMatrix)
     return scoreMatrix
 
-def computeLogLikelihoodForEachClassWithoutClasses(AllSamples, muAndCovDivided):
+def computeLogLikelihoodForEachClassWithoutClasses(AllSamples, muAndCovDivided, doPrint=False):
     scoreMatrix = []
 
     for i in range(len(muAndCovDivided)):
         mu, cov = muAndCovDivided[i][0], muAndCovDivided[i][1] #here it breaks!
         scoreMatrix.append(logpdf_GAU_ND(AllSamples, mu, cov))
-    print('scoreMatrix:')
-    print(scoreMatrix)
+    if doPrint:
+        print('scoreMatrix:')
+        print(scoreMatrix)
     return scoreMatrix
 
 
@@ -89,12 +90,26 @@ def computeMuAndCov(x):
 
 def computeMuAndCovForClass(dataSetSplitted, chosenCase='default'):
     muAndCovForElement = []
+    betweenCovMatrix = np.zeros((dataSetSplitted[0].shape[0], dataSetSplitted[0].shape[0]))
+    muForBetweenCovMatrix = []
+    totalSizeForBetweenCovMatrix = 0
     for classParameters in dataSetSplitted:
         mu, cov = computeMuAndCov(classParameters)
         if chosenCase=='default':
             muAndCovForElement.append([mu, cov])
-        elif chosenCase=='Naive':
-            muAndCovForElement.append([mu, cov * np.ones(classParameters)])
+        elif chosenCase=='naive':
+            #maybe shape is a issue (I don't think!)
+            muAndCovForElement.append([mu, cov * np.eye(classParameters.shape[0])])
+        elif chosenCase=='tied':
+            betweenCovMatrix += cov * classParameters.shape[1]
+            muForBetweenCovMatrix.append(mu)
+            totalSizeForBetweenCovMatrix += classParameters.shape[1]
+
+    if chosenCase=='tied':
+        betweenCovMatrix = betweenCovMatrix / totalSizeForBetweenCovMatrix
+        for mu in muForBetweenCovMatrix:
+            #mu is always the same but, in order to make it easier, I repeat n times
+            muAndCovForElement.append([mu, betweenCovMatrix])
     return muAndCovForElement
 
 
@@ -136,14 +151,37 @@ if __name__ == '__main__':
 
     muAndCovDivided = computeMuAndCovForClass(dataSetsTrainSplittedTransposed)
     #first: compute the likelihoods:
-    logscoreMatrix = computeLogLikelihoodForEachClassWithoutClasses(DVAL, muAndCovDivided)
-    logPosterior = computeLogPosterior(logscoreMatrix, np.ones(3)/3.)
+    logScoreMatrix = computeLogLikelihoodForEachClassWithoutClasses(DVAL, muAndCovDivided)
+    logPosterior = computeLogPosterior(logScoreMatrix, np.ones(3)/3.)
     posteriorProbMatrix = np.exp(logPosterior)
     # proofOfNine(logPosterior)
     accuracy = computeAccuracy(posteriorProbMatrix, LVAL)
-    print('accuracy:')
+    print('accuracy for default:')
     print(accuracy)
-    #phase 2.2 of lab: verify logPosterior is fine! 
+
+    #phase 2.2 of lab: naive Bayes Gaussian Classifier:
+    muAndCovDividedNaive = computeMuAndCovForClass(dataSetsTrainSplittedTransposed, chosenCase='naive')
+    logScoreMatrixNaive = computeLogLikelihoodForEachClassWithoutClasses(DVAL, muAndCovDividedNaive)
+    logPosteriorNaive = computeLogPosterior(logScoreMatrixNaive, np.ones(3)/3.)
+    posteriorProbMatrixNaive = np.exp(logPosteriorNaive)
+    accuracyNaive = computeAccuracy(posteriorProbMatrix, LVAL)
+    print('accuracy for naive:')
+    print(accuracyNaive)
+
+    #now compute accuracy for tied:
+    muAndCovDividedTied = computeMuAndCovForClass(dataSetsTrainSplittedTransposed, chosenCase='tied')
+    print('cov tied:')
+    print(muAndCovDividedTied[0][1]) #same for each class!
+    logScoreMatrixTied = computeLogLikelihoodForEachClassWithoutClasses(DVAL, muAndCovDividedTied)
+    logPosteriorTied = computeLogPosterior(logScoreMatrixTied, np.ones(3)/3.)
+    posteriorProbMatrixTied = np.exp(logPosteriorTied)
+    accuracyTied = computeAccuracy(posteriorProbMatrix, LVAL)
+    print('accuracy for Tied:')
+    print(accuracyTied)
+
+
+
+
 
 
 
