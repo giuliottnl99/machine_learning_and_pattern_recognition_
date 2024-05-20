@@ -1,138 +1,85 @@
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
-import lab3Utils as ut
+import utils as utG
 # import scipy
 # import scipy.linalg
 
-
-def load(fileName):
-    matrixResult = []
-    completeMatrixResult =  []
-    with open(fileName) as file:
-        for line in file:
-            dataLine = line.replace("\n", "").split(",")
-            matrixResult.append(dataLine[0:-1])
-            completeMatrixResult.append(dataLine)
-    return matrixResult, completeMatrixResult
-
-def getCovarianceMatrix(pythonMatrix):
-    matrix = np.array(pythonMatrix).astype(float).T
-    avgVector= np.mean(matrix, axis=1)
-    diffMatrix = matrix - avgVector.reshape(avgVector.size, 1)
-    covarianceMatrix = np.dot(diffMatrix, diffMatrix.T) / matrix.shape[1]
-    return covarianceMatrix
-
-def plot(arrXtoPlot, arrYtoPlot, color, label):
-        #plot x of matrixX and y of the specific matrix of the Y
-        plt.xlabel('caratt 1')
-        plt.ylabel('caratt 2')
-        plt.scatter(np.ravel(arrXtoPlot).astype(float), np.ravel(arrYtoPlot).astype(float), label=label, color=color)
-        plt.tight_layout()
-        plt.legend()
-
-
-def doPCA(dataSetMatrix, completeDataSetMatrix, plotGraph=True, reducedDim=2):
-    covMatrix = getCovarianceMatrix(dataSetMatrix)
-    print('cov matrix:')
-    print(covMatrix)
-
-    #find more important columns:
-    #eigen decomposition:
-    U, s, Vh = np.linalg.svd(covMatrix)
-    print('vector of singular values:')
-    print(s)
-    #try to plot
-    #vector of singular values: [4.20005343 0.24105294 0.0776881  0.02367619]
-    #so get only first 2 dimensions:
-    Vreduced = Vh.T[:, :reducedDim]
-    print("shapes: ")
-    print(Vreduced.shape)
-    print(covMatrix.shape)
-
-    reducedCovMatrix = covMatrix @ Vreduced
-    print("reduced Cov Matrix:")
-    print(reducedCovMatrix)
-    #vector of singular values: [4.20005343 0.24105294 0.0776881  0.02367619]   
-    #note: i see that only the first 2 values of the matrix are relevant, so I can get only the first 2 parts:
-    #plot:
-    setosaMatrix, versicolorMatrix, virginicaMatrix = ut.divideMatrix(completeDataSetMatrix)
-    #try now if in this way it works:
-    toPojectVector = Vh.T[:, 0:reducedDim]
-    print('dimensions:')
-    print(np.array(setosaMatrix).shape)
-    print(np.array(toPojectVector).shape)
-    print(np.array(setosaMatrix))
-    print(np.array(toPojectVector))
-
-    #fix here!   -> Try to use np.array!  
-    setosaReducedMatrix = np.array(setosaMatrix) @ np.array(toPojectVector)
-    versicolorReducedMatrix = versicolorMatrix @ toPojectVector
-    virginicaReducedMatrix = virginicaMatrix @ toPojectVector
+def load_iris(): # Same as in pca script
     
-    if plotGraph==True:
-        plt.figure()
-        plt.gca().invert_yaxis()   
-        plot(np.matrix(setosaReducedMatrix)[:, 0], np.matrix(setosaReducedMatrix)[:, 1], 'blue', 'setosa')
-        plot(np.matrix(versicolorReducedMatrix)[:, 0], np.matrix(versicolorReducedMatrix)[:, 1], 'orange', 'versicolor')
-        plot(np.matrix(virginicaReducedMatrix)[:, 0], np.matrix(virginicaReducedMatrix)[:, 1],'green', 'virginica')
-        plt.show()
-    return setosaReducedMatrix, versicolorReducedMatrix, virginicaReducedMatrix
+    import sklearn.datasets
+    return sklearn.datasets.load_iris()['data'].T, sklearn.datasets.load_iris()['target']
 
-def doLDA(completeDataSetMatrix, plotGraph=True, reducedDim=2):
-    matrixSetosa, matrixVersicolor, matrixVirginica = ut.divideMatrix(completeDataSetMatrix)
-    withinCovMatrix = ut.calculateWithinCovarianceMatrix(np.array(matrixSetosa).astype(float).T, np.array(matrixVersicolor).astype(float).T, np.array(matrixVirginica).astype(float).T)
-    print('within cov matrix:')
-    print(withinCovMatrix)
-    betweenCovMatrix = ut.calculateBetweenCovarianceMatrix(np.array(matrixSetosa).astype(float).T, np.array(matrixVersicolor).astype(float).T, np.array(matrixVirginica).astype(float).T, np.array(dataSetMatrix).astype(float).T)
-    print('between cov matrix:')
-    print(betweenCovMatrix)
 
-    #now I can do generalized eigenvalue problem
-    rightSingularVectors, singularValuesWithin, _ = np.linalg.svd(withinCovMatrix)
-    singularValuesMatrixSquared = np.diag(1.0/(singularValuesWithin**0.5))
-    P1Matrix = rightSingularVectors @ singularValuesMatrixSquared @ rightSingularVectors.T
-
-    covMatrixBetweenTransformed = P1Matrix @ betweenCovMatrix @ P1Matrix.T
-    finalSingularRightsVectors, finalSingularValues, _ = np.linalg.svd(np.array(covMatrixBetweenTransformed))
-    #choose how much you should reduce:
-    finalResult = finalSingularRightsVectors[:, 0:reducedDim]
-    print(finalResult)
-
-    LDASubspaceSetosa = finalResult.T @ P1Matrix @ matrixSetosa.T
-    LDASubspaceVersicolor = finalResult.T @ P1Matrix @ matrixVersicolor.T
-    LDASubspaceVirginica = finalResult.T @ P1Matrix @ matrixVirginica.T
-
-    if plotGraph==True:
-        plt.figure()
-        plt.gca().invert_xaxis()   
-        plt.gca().invert_yaxis()   
-        plot(np.matrix(LDASubspaceSetosa)[0, :], np.matrix(LDASubspaceSetosa)[1, :], 'blue', 'setosa')
-        plot(np.matrix(LDASubspaceVersicolor)[0, :], np.matrix(LDASubspaceVersicolor)[1, :], 'orange', 'versicolor')
-        plot(np.matrix(LDASubspaceVirginica)[0, :], np.matrix(LDASubspaceVirginica)[1, :], 'green', 'virginica')
-        plt.show()
-    return LDASubspaceSetosa, LDASubspaceVersicolor, LDASubspaceVirginica
-
-def doBinaryClassification(completeDataSetMatrix):
-    matrixSetosa, matrixVersicolor, matrixVirginica = ut.divideMatrix(completeDataSetMatrix)
-    trainDataVersicolor, testDataVersicolor = ut.divideSamples(matrixVersicolor)
-    trainDataVirginica, testDataVirginica = ut.divideSamples(matrixVirginica)
-    ut.plot_hist(trainDataVersicolor, 'Versicolor', trainDataVirginica, 'Virginica', 5, 'Model training set')
-    ut.plot_hist(testDataVersicolor, 'Versicolor', testDataVirginica, 'Virginica', 5, 'Model validation set')
+def plotPCA(D, L):
+    reducingMatrix = utG.getPCAReducingMatrix(D, L, dim=2)
+    D_PCA = reducingMatrix @ D
+    plt.figure()
+    # plt.gca().invert_xaxis()
+    plt.gca().invert_yaxis()
+    utG.plotScatter(D_PCA[0, L==0], D_PCA[1, L==0], l='Setosa', c="blue")
+    utG.plotScatter(D_PCA[0, L==1], D_PCA[1, L==1], l='Versicolor', c="orange")
+    utG.plotScatter(D_PCA[0, L==2], D_PCA[1, L==2], l='virginica', c="green")
+    plt.plot()
     plt.show()
 
-def doPCAAndLDAClassification(completeDataSetMatrix):
-    #try to understand if I understood professor's task:
-    matrixSetosa, matrixVersicolor, matrixVirginica = ut.divideMatrix(completeDataSetMatrix)
-    setosaReducedMatrix, versicolorReducedMatrix, virginicaReducedMatrix = doPCA(dataSetMatrix, completeDataSetMatrix, plotGraph=False, reducedDim=3)
-    finalSetosaReducedMatrix, finalVersicolorReducedMatrix, finalVirginicaReducedMatrix = doLDA(setosaReducedMatrix, versicolorReducedMatrix, virginicaReducedMatrix)
-    return finalSetosaReducedMatrix, finalVersicolorReducedMatrix, finalVirginicaReducedMatrix
+def plotLDA(D, L):
+    reducingMatrix = utG.computeLDA_ReducingMatrix(D, L)
+    projD = reducingMatrix @ D
+    plt.figure()
+    plt.gca().invert_xaxis()
+    plt.gca().invert_yaxis()
+    utG.plotScatter(projD[0, L==0], projD[1, L==0], l='Setosa', c="blue")
+    utG.plotScatter(projD[0, L==1], projD[1, L==1], l='Versicolor', c="yellow")
+    utG.plotScatter(projD[0, L==2], projD[1, L==2], l='virginica', c="green")
+    plt.plot()
+    plt.show()
+
+def doBinaryClassification(D, L, toPlot=False):
+    #first of all, remove data where the data label is ==0 keeping 1 and 2 only
+    dataSetFiltered = D[:, L!=0]
+    labelSetFiltered = L[L!=0]
+    #divide training and test set:
+    (DT, LT), (DV, LV) = utG.divideSamplesRandomly(dataSetFiltered, labelSetFiltered)
+    #doLDA
+    reducingMatrix = utG.computeLDA_ReducingMatrix(DT, LT, dim=1)
+    ProjDT_lda = reducingMatrix @ DT
+    #check if virginica class samples are on the right of the Versicolor samples:
+    if ProjDT_lda[0, LT==1].mean(1)[0, 0] > ProjDT_lda[0, LT==2].mean(1)[0, 0]:
+        reducingMatrix = - reducingMatrix
+        ProjDT_lda = reducingMatrix @ DT
+    ProjDV_lda = reducingMatrix @ DV
+    threshold = ( ProjDT_lda[0, LT==1].mean() + ProjDT_lda[0, LT==2].mean() ) / 2.0
+    #compute number of times projDV is good
+    PV = np.matrix(np.zeros(shape=LV.shape))
+    PV[ProjDV_lda >= threshold] = 2
+    PV[ProjDV_lda < threshold] = 1
+    matrixValidSamples = [PV[0, i] for i in range(len(LV)) if LV[i]==PV[0, i]]
+    #expected: 32 out of 34
+    print("there are %d matches out of %d classes" % (len(matrixValidSamples), len(LV)))
+
+    if toPlot:
+        #first plot test sample reduced:
+        plt.figure()
+        plt.title("Training set")
+        utG.plotHist(ProjDT_lda[0, LT==1], c="orange", i=5, l="Versicolor")
+        utG.plotHist(ProjDT_lda[0, LT==2], c="green", i=5, l="Virginica")
+        #then plot validation sample reduced:
+        plt.figure()
+        plt.title("Validation set")
+        utG.plotHist(ProjDV_lda[0, LV==1], c="orange", i=5, l="Versicolor")
+        utG.plotHist(ProjDV_lda[0, LV==2], c="green", i=5, l="Virginica")
+        
+        plt.show()
+
 
 if __name__ == '__main__':
-    dataSetMatrix, completeDataSetMatrix = load('..\lab2\iris.csv')
-    doPCA(dataSetMatrix, completeDataSetMatrix)
+    D, L = load_iris()
+    #plot using PCA: works
+    # plotPCA(D, L)
 
-    #now we can use LDA to improve everything:
-    doLDA(completeDataSetMatrix)
+    #plot using LDA: works:
+    # plotLDA(D, L)
 
-    doBinaryClassification(completeDataSetMatrix)
+    #then we can procede with binary classification:
+    doBinaryClassification(D, L, toPlot=True)
