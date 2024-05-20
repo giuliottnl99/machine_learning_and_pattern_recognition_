@@ -60,15 +60,16 @@ def computeLogLikelihoodForEachClassWithoutClasses(AllSamples, muAndCovDivided, 
     return scoreMatrix
 
 
-def computeLogPosterior(logScoreMatrix, v_prior):
+def computeLogPosterior(logScoreMatrix, v_prior, toPrint=False):
     #note: classData is a matrix!
     v_priorLog = np.log(v_prior)
     logSJoint = logScoreMatrix + v_priorLog.reshape(v_priorLog.size, 1)
-    print('SJoint found:')
-    print(np.exp(logSJoint))
     logSMarginalToReshape = scipy.special.logsumexp(logSJoint, axis=0)
     logSmarginal = (logSMarginalToReshape).reshape(1, logSMarginalToReshape.size)
     logSPost = logSJoint - logSmarginal
+    if toPrint:
+        print('SJoint found:')
+        print(np.exp(logSJoint))
     return logSPost
 
 
@@ -94,8 +95,10 @@ def computeMuAndCovForClass(dataSetSplitted, chosenCase='default'):
     muForBetweenCovMatrix = []
     totalSizeForBetweenCovMatrix = 0
     for classParameters in dataSetSplitted:
+        if chosenCase=='binaryClassification' and classParameters.shape[0]==0:
+            continue
         mu, cov = computeMuAndCov(classParameters)
-        if chosenCase=='default':
+        if chosenCase=='default' or chosenCase=='binaryClassification':
             muAndCovForElement.append([mu, cov])
         elif chosenCase=='naive':
             #maybe shape is a issue (I don't think!)
@@ -149,22 +152,22 @@ if __name__ == '__main__':
     dataSetsTrainSplitted = splitDataSets(DTR, LTR)
     dataSetsTrainSplittedTransposed = trasposeDataSetSplitted(dataSetsTrainSplitted)
 
-    muAndCovDivided = computeMuAndCovForClass(dataSetsTrainSplittedTransposed)
+    muAndCovDividedML = computeMuAndCovForClass(dataSetsTrainSplittedTransposed)
     #first: compute the likelihoods:
-    logScoreMatrix = computeLogLikelihoodForEachClassWithoutClasses(DVAL, muAndCovDivided)
-    logPosterior = computeLogPosterior(logScoreMatrix, np.ones(3)/3.)
-    posteriorProbMatrix = np.exp(logPosterior)
+    logScoreMatrixML = computeLogLikelihoodForEachClassWithoutClasses(DVAL, muAndCovDividedML)
+    logPosteriorML = computeLogPosterior(logScoreMatrixML, np.ones(3)/3.)
+    posteriorProbMatrixML = np.exp(logPosteriorML)
     # proofOfNine(logPosterior)
-    accuracy = computeAccuracy(posteriorProbMatrix, LVAL)
-    print('accuracy for default:')
-    print(accuracy)
+    accuracyML = computeAccuracy(posteriorProbMatrixML, LVAL)
+    print('accuracy for ML solution:')
+    print(accuracyML)
 
     #phase 2.2 of lab: naive Bayes Gaussian Classifier:
     muAndCovDividedNaive = computeMuAndCovForClass(dataSetsTrainSplittedTransposed, chosenCase='naive')
     logScoreMatrixNaive = computeLogLikelihoodForEachClassWithoutClasses(DVAL, muAndCovDividedNaive)
     logPosteriorNaive = computeLogPosterior(logScoreMatrixNaive, np.ones(3)/3.)
     posteriorProbMatrixNaive = np.exp(logPosteriorNaive)
-    accuracyNaive = computeAccuracy(posteriorProbMatrix, LVAL)
+    accuracyNaive = computeAccuracy(posteriorProbMatrixNaive, LVAL)
     print('accuracy for naive:')
     print(accuracyNaive)
 
@@ -175,9 +178,30 @@ if __name__ == '__main__':
     logScoreMatrixTied = computeLogLikelihoodForEachClassWithoutClasses(DVAL, muAndCovDividedTied)
     logPosteriorTied = computeLogPosterior(logScoreMatrixTied, np.ones(3)/3.)
     posteriorProbMatrixTied = np.exp(logPosteriorTied)
-    accuracyTied = computeAccuracy(posteriorProbMatrix, LVAL)
+    accuracyTied = computeAccuracy(posteriorProbMatrixTied, LVAL)
     print('accuracy for Tied:')
     print(accuracyTied)
+
+
+    #class problem, ML model
+    #logPdf of class 2 - logPdf of class 1 (pdfGau of class 1 / pdfGau of class 2)
+    DReduced = D[:, L!=0]
+    LReduced = L[L!=0]
+    (DTRReduced, LTRReduced), (DVALReduced, LVALReduced) = split_DB_2to1(DReduced, LReduced)
+    dataSetsTrainSplitted = splitDataSets(DTRReduced, LTRReduced)
+    dataSetsTrainSplittedTransposed = trasposeDataSetSplitted(dataSetsTrainSplitted)
+
+    muAndCovDividedML = computeMuAndCovForClass(dataSetsTrainSplittedTransposed, chosenCase='binaryClassification')
+    logScoreMatrixML = computeLogLikelihoodForEachClassWithoutClasses(DVALReduced, muAndCovDividedML)
+    LLR = logScoreMatrixML[1] - logScoreMatrixML[0]
+    oneAnd2SamplesArrays = np.zeros(DVALReduced.shape[1], dtype=np.int32)
+    oneAnd2SamplesArrays[LLR>=0] = 2
+    oneAnd2SamplesArrays[LLR<0] = 1
+    indexesOfMatchedElements = np.where(oneAnd2SamplesArrays == LVALReduced)[0]
+    arrayOfMatchedElements = LVALReduced[indexesOfMatchedElements]
+    print('accuracy of class-problem division: ')
+    print(len(arrayOfMatchedElements) / len(LVALReduced))
+
 
 
 
