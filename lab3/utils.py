@@ -63,12 +63,13 @@ def computeLDA_ReducingMatrix(D, L, dim=2):
 
 #get reducing matrix applying PCA: just compute: reducingMatrix @ D to obtain reduction
 #Note: usually you compute Vh.T (getting columns instead of rows) and then retranspose it to apply PCA, but it makes not sense!
-def getPCAReducingMatrix(D, L, dim=2):
+def computePCA_ReducingMatrix(D, L, dim=2):
     C = computeCovMatrix(D, L)
     U, s, Vh = np.linalg.svd(C)
     # reducingMatrix = Vh.T[:, 0:dim]
     reducingMatrix = Vh[0:dim, :]
     return reducingMatrix
+
 
 
 def plotHist(array, c="red", l="", i=5):
