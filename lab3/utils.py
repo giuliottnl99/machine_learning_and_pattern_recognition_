@@ -80,3 +80,83 @@ def plotScatter(arrayX, arrayY, l='', c="red"):
     plt.ylabel('caratt 2')
     plt.scatter(np.ravel(arrayX).astype(float), np.ravel(arrayY).astype(float), label=l, color=c)
 
+#I will load the file as an array in D_and_L.npy
+def loadFile(path):
+    D = []
+    L = []
+    with open(path, 'r') as f:
+        for line in f:
+               elements = line.split(" , ")
+               D.append(elements[0:-1])
+               L.append(elements[-1])
+    return np.matrix(D).T, np.ravel(L)
+               
+def loadFileAndSave(pathFrom, pathTo1, pathTo2):
+     D, L = loadFile(pathFrom)
+     np.save(pathTo1, D)
+     np.save(pathTo2, L)
+
+#want true at the right and false at the left!
+def computeAndRevertProj_DT_DV(DT, DV, LT, reducingMatrix, lblTrue, lblFalse):
+    projDT = reducingMatrix @ DT
+    if projDT[0, LT==lblFalse].mean(1)[0, 0] > projDT[0, LT==lblTrue].mean(1)[0, 0]:    
+        reducingMatrix = - reducingMatrix
+    projDT = reducingMatrix @ DT
+    projDV = reducingMatrix @ DV
+    return projDT, projDV
+
+
+#False on the left, True on the right is the config chosen
+def doBinaryClassification(DBinary, LBinary, toPlot=False, toPrint=True, chosenMethod='LDA', dimensionsPCA=2, LValueTrue=1, LValueFalse=0, threshold=None):
+    #first of all, remove data where the data label is ==0 keeping 1 and 2 only
+    #divide training and test set:
+    (DT, LT), (DV, LV) = divideSamplesRandomly(DBinary, LBinary)
+    #doLDA
+    reducingMatrix = None
+    projDT = None
+    projDV = None
+    if chosenMethod == 'LDA':
+        reducingMatrix = computeLDA_ReducingMatrix(DT, LT, dim=1)
+    if chosenMethod == 'PCA':
+        reducingMatrix = computePCA_ReducingMatrix(DT, LT, dim=1)
+
+    if chosenMethod=='bothPCA_LDA':
+        reducingMatrixPCA = computePCA_ReducingMatrix(DT, LT, dim=dimensionsPCA)
+        projDT, projDV = computeAndRevertProj_DT_DV(DT, DV, LT, reducingMatrixPCA, LValueTrue, LValueFalse)
+        reducingMatrixLDA = computeLDA_ReducingMatrix(projDT, LT, dim=1)
+        projDT, projDV = computeAndRevertProj_DT_DV(projDT, projDV, LT, reducingMatrixLDA, LValueTrue, LValueFalse)
+    else:
+        projDT, projDV = computeAndRevertProj_DT_DV(DT, DV, LT, reducingMatrix, LValueTrue, LValueFalse)
+
+    #check if virginica class samples are on the right of the Versicolor samples:
+    if threshold == None:
+        threshold = ( projDT[0, LT==LValueTrue].mean() + projDT[0, LT==LValueFalse].mean() ) / 2.0
+    elif threshold=="Median":
+        threshold = ( np.median(projDT[0, LT==LValueTrue], axis=1) + np.median(projDT[0, LT==LValueFalse], axis=1) ) / 2.0
+    #compute number of times projDV is good
+    PV = np.matrix(np.zeros(shape=LV.shape))
+    PV[projDV >= threshold] = LValueTrue
+    PV[projDV < threshold] = LValueFalse
+    matrixValidSamples = [PV[0, i] for i in range(len(LV)) if LV[i]==PV[0, i]]
+    #expected: 32 out of 34
+    if toPrint:
+        print("there are %d matches out of %d classes" % (len(matrixValidSamples), len(LV)))
+
+    if toPlot:
+        #first plot test sample reduced:
+        plt.figure()
+        plt.title("Training set")
+        plotHist(projDT[0, LT==LValueTrue], c="green", i=5, l="True")
+        plotHist(projDT[0, LT==LValueFalse], c="red", i=5, l="False")
+        #then plot validation sample reduced:
+        plt.figure()
+        plt.title("Validation set")
+        plotHist(projDV[0, LV==LValueTrue], c="green", i=5, l="True")
+        plotHist(projDV[0, LV==LValueFalse], c="red", i=5, l="False")
+        
+        plt.show()
+    return len(matrixValidSamples) / len(LV)
+
+
+# if __name__ == "__main__":
+#     loadFileAndSave('trainData.txt', 'D_exam_train.npy', 'L_exam_train.npy')
