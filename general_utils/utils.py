@@ -108,7 +108,7 @@ def computeAndRevertProj_DT_DV(DT, DV, LT, reducingMatrix, lblTrue, lblFalse):
 
 
 #False on the left, True on the right is the config chosen
-def doBinaryClassification(DBinary, LBinary, toPlot=False, toPrint=True, chosenMethod='LDA', dimensionsPCA=2, LValueTrue=1, LValueFalse=0, threshold=None):
+def doBinaryClassification_PCA_LDA(DBinary, LBinary, toPlot=False, toPrint=True, chosenMethod='LDA', dimensionsPCA=2, LValueTrue=1, LValueFalse=0, threshold=None):
     #first of all, remove data where the data label is ==0 keeping 1 and 2 only
     #divide training and test set:
     (DT, LT), (DV, LV) = divideSamplesRandomly(DBinary, LBinary)
@@ -169,7 +169,7 @@ def computeMuAndCovForClass(D, L, chosenCase='ML'):
         if chosenCase=='ML':
             muAndCovForClass[className] = [muC, covC]
         if chosenCase == 'naive':
-            muAndCovForClass[className] = [muC, covC * np.eye(classMatrix.shape[0])] #what does change from ML?
+            muAndCovForClass[className] = [muC, np.array(covC) * np.eye(classMatrix.shape[0])] #what does change from ML?
         if chosenCase == 'tied':
             covTied += covC * classMatrix.shape[1]
             muTied[className] = muC
@@ -232,7 +232,7 @@ def createAndApplyMVG(D, L, chosenCase='ML'):
     return accuracy
 
 #it is the same as calling createAndApplyMVG
-def computeAccuracyUsingBinaryDivision(DBinary, LBinary, labelTrue, labelFalse, chosenCase='ML'):
+def computeAccuracyUsingBinaryDivision_MVG(DBinary, LBinary, labelTrue, labelFalse, chosenCase='ML'):
     (DT, LT), (DV, LV) = divideSamplesRandomly(DBinary, LBinary)
 
     muAndCovDivided = computeMuAndCovForClass(DT, LT, chosenCase=chosenCase)
@@ -244,7 +244,9 @@ def computeAccuracyUsingBinaryDivision(DBinary, LBinary, labelTrue, labelFalse, 
     arrayMatches = [ previsionArr[i] for i in range(len(LV)) if previsionArr[i]==LV[i] ]
     return len(arrayMatches) / len(LV)
 
-
+def computePearsonCorrCoeff(covMatrix):
+    corr = covMatrix / ( vcol(np.asarray(covMatrix.diagonal())**0.5) * vrow(np.asarray(covMatrix.diagonal())**0.5) )
+    return corr
 
 
 # if __name__ == "__main__":
