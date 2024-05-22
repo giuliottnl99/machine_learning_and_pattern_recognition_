@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy
 
 def vcol(x): # Same as in pca script
     return x.reshape((x.size, 1))
@@ -157,6 +158,94 @@ def doBinaryClassification(DBinary, LBinary, toPlot=False, toPrint=True, chosenM
         plt.show()
     return len(matrixValidSamples) / len(LV)
 
+def computeMuAndCovForClass(D, L, chosenCase='ML'):
+    muAndCovForClass = {}
+    covTied = np.zeros((D.shape[0], D.shape[0]))
+    muTied = {}
+    for className in np.unique(L):
+        classMatrix = D[:, L==className]
+        muC = classMatrix.mean(1)
+        covC = computeCovMatrix(D[:, L==className], L)
+        if chosenCase=='ML':
+            muAndCovForClass[className] = [muC, covC]
+        if chosenCase == 'naive':
+            muAndCovForClass[className] = [muC, covC * np.eye(classMatrix.shape[0])] #what does change from ML?
+        if chosenCase == 'tied':
+            covTied += covC * classMatrix.shape[1]
+            muTied[className] = muC
+    
+    if chosenCase == 'tied':
+        for className in np.unique(L):
+            muAndCovForClass[className] = [muTied[className], covTied/D.shape[1]]
+    return muAndCovForClass
+
+#try transformed version too!    
+def logpdf_GAU_ND(x, mu, C):
+    P = np.linalg.inv(C)
+    # return -0.5*x.shape[0]*np.log(np.pi*2) - 0.5*np.linalg.slogdet(C)[1] - 0.5 * ((x-mu).T @ (P @ (x-mu))).sum(0)
+    return -0.5*x.shape[0]*np.log(np.pi*2) - 0.5*np.linalg.slogdet(C)[1] - 0.5 * (np.array(x-vcol(mu)) * (np.array(P) @ np.array(x-vcol(mu)))).sum(0)    
+
+
+#return logScoreMatrix. 
+def computeLogScoreMatrix(D, L, muAndCovDividedForClass):
+    logScoreMatrix = []
+    classNamesArr = []
+    for className in np.unique(L):
+       mu, cov =  muAndCovDividedForClass[className][0], muAndCovDividedForClass[className][1]
+       logScoreMatrix.append(logpdf_GAU_ND(D, mu, cov))
+       classNamesArr.append(className) 
+    return np.matrix(logScoreMatrix), classNamesArr
+
+def computePosterior(D, L, logScoreMatrix):
+    logPosterior = computeLogPosterior(D, L, logScoreMatrix)
+    return np.exp(logPosterior)
+
+def computeLogPosterior(D, L, logScoreMatrix):
+    V_priorLog = np.log(np.ones(logScoreMatrix.shape[0]) / logScoreMatrix.shape[0])
+    logSJoint = logScoreMatrix + vcol(V_priorLog)
+    logSMarginal = vrow(scipy.special.logsumexp(logSJoint, axis=0))
+    return logSJoint - logSMarginal
+
+def computePrevisionArray(D, L, posteriorProbMatrix, classNamesArr):
+    #get classes for each
+    #for each sample get the maximum probability
+    previsionArray = []
+    for j in range(posteriorProbMatrix.shape[1]):
+        bestClassIndex = np.argmax(posteriorProbMatrix[:, j])
+        bestClass = classNamesArr[bestClassIndex]
+        previsionArray.append(bestClass)
+    return previsionArray
+
+def computeAccuracy(previsionArray, L):
+    validElements = [ L[i] for i in range(len(L)) if L[i]==previsionArray[i]]
+    return len(validElements) / len(L) 
+
+def createAndApplyMVG(D, L, chosenCase='ML'):
+    (DT, LT), (DV, LV) = divideSamplesRandomly(D, L)
+
+    muAndCovDivided = computeMuAndCovForClass(DT, LT, chosenCase=chosenCase)
+    #first: compute the likelihoods:
+    logScoreMatrix, classNamesArr = computeLogScoreMatrix(DV, LV, muAndCovDivided)
+    posteriorProbMatrix = computePosterior(DV, LV, logScoreMatrix)
+    previsionArray = computePrevisionArray(DV, LV, posteriorProbMatrix, classNamesArr)
+    accuracy = computeAccuracy(previsionArray, LV)
+    return accuracy
+
+#it is the same as calling createAndApplyMVG
+def computeAccuracyUsingBinaryDivision(DBinary, LBinary, labelTrue, labelFalse, chosenCase='ML'):
+    (DT, LT), (DV, LV) = divideSamplesRandomly(DBinary, LBinary)
+
+    muAndCovDivided = computeMuAndCovForClass(DT, LT, chosenCase=chosenCase)
+    logScoreMatrix, classNamesArr = computeLogScoreMatrix(DV, LV, muAndCovDivided)
+    LLR = vcol(logScoreMatrix[1] - logScoreMatrix[0])
+    previsionArr = np.zeros((DV.shape[1], 1), dtype=np.int32)
+    previsionArr[LLR>=0] = labelTrue 
+    previsionArr[LLR<0] = labelFalse
+    arrayMatches = [ previsionArr[i] for i in range(len(LV)) if previsionArr[i]==LV[i] ]
+    return len(arrayMatches) / len(LV)
+
+
+
 
 # if __name__ == "__main__":
-#     loadFileAndSave('trainData.txt', 'D_exam_train.npy', 'L_exam_train.npy')
+#     loadFileAndSave('trainData.txt', 'D_exam_train.npy', 'L_exam_train.npy') 
