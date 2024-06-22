@@ -1,12 +1,23 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy
+import sklearn.datasets
 
 def vcol(x): # Same as in pca script
     return x.reshape((x.size, 1))
 
 def vrow(x): # Same as in pca script
     return np.matrix(x.reshape((1, x.size)))
+
+def vcol_arr(x):
+    return np.array(x.reshape((x.size, 1)))
+
+def vrow_arr(x):
+    return np.array(x.reshape((1, x.size)))
+
+def load_iris():
+    D, L = sklearn.datasets.load_iris()['data'].T, sklearn.datasets.load_iris()['target']
+    return D, L
 
 #given D with rows = characteristic and col = sample, get the cov matrix
 def computeCovMatrix(D, L):
@@ -63,7 +74,7 @@ def computeLDA_ReducingMatrix(D, L, dim=2):
     return P2.T @ P1
 
 #get reducing matrix applying PCA: just compute: reducingMatrix @ D to obtain reduction
-#Note: usually you compute Vh.T (getting columns instead of rows) and then retranspose it to apply PCA, but it makes not sense!
+#Note: theoretically you compute Vh.T (getting columns instead of rows) and then retranspose it to apply PCA, but it makes not sense!
 def computePCA_ReducingMatrix(D, L, dim=2):
     C = computeCovMatrix(D, L)
     U, s, Vh = np.linalg.svd(C)
@@ -80,6 +91,14 @@ def plotScatter(arrayX, arrayY, l='', c="red"):
     plt.xlabel('caratt 1')
     plt.ylabel('caratt 2')
     plt.scatter(np.ravel(arrayX).astype(float), np.ravel(arrayY).astype(float), label=l, color=c)
+
+def plotScatterUsingScale(arrayX, arrayY, title='', c="red", xLabel='caratt 1', yLabel='caratt 2'):
+    plt.xlabel(xLabel)
+    plt.ylabel(yLabel)
+    plt.xscale('log', base=10)
+    plt.title(title)
+    plt.scatter(np.ravel(arrayX).astype(float), np.ravel(arrayY).astype(float), color=c)
+
 
 #I will load the file as an array in D_and_L.npy
 def loadFile(path):
@@ -196,20 +215,27 @@ def computeLogScoreMatrix(D, L, muAndCovDividedForClass):
        classNamesArr.append(className) 
     return np.matrix(logScoreMatrix), classNamesArr
 
-def computePosterior(D, L, logScoreMatrix):
-    logPosterior = computeLogPosterior(D, L, logScoreMatrix)
+def computePosterior(logScoreMatrix):
+    logPosterior = computeLogPosterior(logScoreMatrix)
     return np.exp(logPosterior)
 
-def computeLogPosterior(D, L, logScoreMatrix):
-    V_priorLog = np.log(np.ones(logScoreMatrix.shape[0]) / logScoreMatrix.shape[0])
+def computeLogPosterior(logScoreMatrix, prior=None):
+    if prior==None:
+        prior = np.ones(logScoreMatrix.shape[0]) / logScoreMatrix.shape[0]
+    V_priorLog = np.log(prior)
     logSJoint = logScoreMatrix + vcol(V_priorLog)
     logSMarginal = vrow(scipy.special.logsumexp(logSJoint, axis=0))
     return logSJoint - logSMarginal
 
-def computePrevisionArray(D, L, posteriorProbMatrix, classNamesArr):
+def computePrevisionArray(posteriorProbMatrix, classNamesArr):
     #get classes for each
     #for each sample get the maximum probability
     previsionArray = []
+    if classNamesArr == None:
+        classNamesArr = []
+        for j in range(posteriorProbMatrix.shape[1]):
+           classNamesArr.append(j) 
+
     for j in range(posteriorProbMatrix.shape[1]):
         bestClassIndex = np.argmax(posteriorProbMatrix[:, j])
         bestClass = classNamesArr[bestClassIndex]
@@ -220,18 +246,37 @@ def computeAccuracy(previsionArray, L):
     validElements = [ L[i] for i in range(len(L)) if L[i]==previsionArray[i]]
     return len(validElements) / len(L) 
 
+#Log score matrix is usually known as LLR
+def applyMVGToComputeLogScoreMatrix(D, L, chosenCase='ML'):
+    (DT, LT), (DV, LV) = divideSamplesRandomly(D, L)
+    muAndCovDivided = computeMuAndCovForClass(DT, LT, chosenCase=chosenCase)
+    #first: compute the likelihoods:
+    logScoreMatrix, classNamesArr = computeLogScoreMatrix(DV, LV, muAndCovDivided)
+    return logScoreMatrix
+
+#LLR = logPosteriorMatrix binarized!
+def applyMVGToComputeLLR_Binary(D, L, chosenCase='ML'):
+    (DT, LT), (DV, LV) = divideSamplesRandomly(D, L)
+    muAndCovDivided = computeMuAndCovForClass(DT, LT, chosenCase=chosenCase)
+    #first: compute the likelihoods:
+    logScoreMatrix, classNamesArr = computeLogScoreMatrix(DV, LV, muAndCovDivided)
+    logPosteriorProbMatrix = computeLogPosterior(logScoreMatrix)
+    LLR = logPosteriorProbMatrix[0, :] - logPosteriorProbMatrix[1, :]
+    return LLR
+
+
 def createAndApplyMVG(D, L, chosenCase='ML'):
     (DT, LT), (DV, LV) = divideSamplesRandomly(D, L)
 
     muAndCovDivided = computeMuAndCovForClass(DT, LT, chosenCase=chosenCase)
     #first: compute the likelihoods:
     logScoreMatrix, classNamesArr = computeLogScoreMatrix(DV, LV, muAndCovDivided)
-    posteriorProbMatrix = computePosterior(DV, LV, logScoreMatrix)
-    previsionArray = computePrevisionArray(DV, LV, posteriorProbMatrix, classNamesArr)
+    posteriorProbMatrix = computePosterior(logScoreMatrix)
+    previsionArray = computePrevisionArray(posteriorProbMatrix, classNamesArr)
     accuracy = computeAccuracy(previsionArray, LV)
-    return accuracy
+    return accuracy, previsionArray
 
-#it is the same as calling createAndApplyMVG
+#it is the same as calling createAndApplyMVG but works only for binarys
 def computeAccuracyUsingBinaryDivision_MVG(DBinary, LBinary, labelTrue, labelFalse, chosenCase='ML'):
     (DT, LT), (DV, LV) = divideSamplesRandomly(DBinary, LBinary)
 
@@ -248,6 +293,180 @@ def computePearsonCorrCoeff(covMatrix):
     corr = covMatrix / ( vcol(np.asarray(covMatrix.diagonal())**0.5) * vrow(np.asarray(covMatrix.diagonal())**0.5) )
     return corr
 
+#previsionArray must be passed as a 1-d array with same values as predictions should!
+def computeConfusionMatrix(previsionArray, LVAL):
+    confusionMatrix = np.zeros((len(np.unique(LVAL)), len(np.unique(LVAL))))
+    previsionArrayRaveled = np.ravel(previsionArray)
+    mapLabelsToIndex = {} #contains className -> Associated index
+    nClass=0
+    for className in np.unique(LVAL):
+        mapLabelsToIndex[className] = nClass
+        nClass += 1
+    for i in range(len(LVAL)):
+        predictedLabel = previsionArrayRaveled[i]
+        actualLabel = LVAL[i]
+        indexPredLabel = mapLabelsToIndex[predictedLabel]
+        indexActualLabel = mapLabelsToIndex[actualLabel]
+        confusionMatrix[indexPredLabel, indexActualLabel] += 1
+    return confusionMatrix
+
+def computeOptimalThresholdUsingCosts_Binary(prior, Cfn, Cfp):
+    return -np.log( (prior * Cfn) / ((1 - prior) * Cfp) )
+
+#remember that conventionally true case is on the left of the threshold and false is on the right!
+def computePrevisionMatrix_Binary(llrArray, threshold, trueValue=None, falseValue=None):
+    previsionArrayBinary = llrArray < threshold
+    previsionArrayBinaryWithValues = None
+    if(trueValue!=None or falseValue!=None):
+        previsionArrayBinaryWithValues = np.zeros(len(previsionArrayBinary))
+        previsionArrayBinaryWithValues[previsionArrayBinary==True] = trueValue
+        previsionArrayBinaryWithValues[previsionArrayBinary==False] = falseValue
+    else:
+        previsionArrayBinaryWithValues = previsionArrayBinary
+    return previsionArrayBinaryWithValues
+    
+#llrArray should be an array with 1-d only -> That's important!
+def computePrevisionMatrixUsingCosts_Binary(llrArray, prior, Cfn, Cfp, trueValue=None, falseValue=None):
+    llrArrayRavel = np.ravel(llrArray)
+    threshold = computeOptimalThresholdUsingCosts_Binary(prior, Cfn, Cfn)
+    return computePrevisionMatrix_Binary(llrArrayRavel, threshold, trueValue=trueValue,falseValue=falseValue)
+
+def computeDCFBayesError_Binary(confusionMatrix, prior: float, costFalseNeg: float, costFalsePos: float, normalize=True):
+    M = confusionMatrix
+    probFalseNeg = M[0,1] / (M[0,1] + M[1,1])
+    probFalsePos = M[1,0] / (M[0,0] + M[1,0])
+    bayesError = prior * costFalseNeg * probFalseNeg + (1-prior) * costFalsePos * probFalsePos
+    if normalize:
+        return bayesError / np.minimum(prior * costFalseNeg, (1-prior)*costFalsePos)
+    return bayesError
+
+#compute and index of (Detection cost function) -> if >1 the system is not good at all!
+#in the priors_array pass first 1-p and then p
+def computeDCFBayesError_Multiclass(confusionMatrix, priors_array, costsMatrix, normalize=True):
+    #convert in case you need:
+    priors_array = np.array(priors_array)
+    errorsArray = np.array(confusionMatrix / vrow(confusionMatrix.sum(0)))
+    costsMatrix = np.array(costsMatrix)
+    bayesError = ((np.multiply(errorsArray, costsMatrix)).sum(0)  * priors_array.ravel()).sum()
+    if normalize:
+        return bayesError / np.min(costsMatrix @ vcol(priors_array))
+    return bayesError
+
+#try to compute DCF for every threshold until it finds min threshold and min DCF. 
+def compute_minDCF_binary_slow(llr, classLabels, prior, Cfn, Cfp, returnThreshold=False):    
+    thresholds = np.concatenate([np.array([-np.inf]), np.ravel(llr), np.array([np.inf])])
+    dcfMin = None
+    dcfTh = None
+    for th in thresholds:
+        predictedLabels = np.int32(llr > th)
+        confusionMatrix = computeConfusionMatrix(predictedLabels, classLabels)
+        dcf = computeDCFBayesError_Binary(confusionMatrix, prior, Cfn, Cfp, normalize=True)
+        if dcfMin is None or dcf < dcfMin:
+            dcfMin = dcf
+            dcfTh = th
+    if returnThreshold:
+        return dcfMin, dcfTh
+    else:
+        return dcfMin
+
+#hard copied by solution, but I need fast version for the lab:
+def compute_Pfn_Pfp_allThresholds_fast(llr, classLabels):
+    llrSorter = np.argsort(llr)
+    llrSorted = llr[llrSorter] # We sort the llrs
+    classLabelsSorted = classLabels[llrSorter] # we sort the labels so that they are aligned to the llrs
+
+    Pfp = []
+    Pfn = []
+    
+    nTrue = (classLabelsSorted==1).sum()
+    nFalse = (classLabelsSorted==0).sum()
+    nFalseNegative = 0 # With the left-most theshold all samples are assigned to class 1
+    nFalsePositive = nFalse
+    
+    Pfn.append(nFalseNegative / nTrue)
+    Pfp.append(nFalsePositive / nFalse)
+    
+    for idx in range(len(llrSorted)):
+        if classLabelsSorted[idx] == 1:
+            nFalseNegative += 1 # Increasing the threshold we change the assignment for this llr from 1 to 0, so we increase the error rate
+        if classLabelsSorted[idx] == 0:
+            nFalsePositive -= 1 # Increasing the threshold we change the assignment for this llr from 1 to 0, so we decrease the error rate
+        Pfn.append(nFalseNegative / nTrue)
+        Pfp.append(nFalsePositive / nFalse)
+
+    #The last values of Pfn and Pfp should be 1.0 and 0.0, respectively
+    #Pfn.append(1.0) # Corresponds to the numpy.inf threshold, all samples are assigned to class 0
+    #Pfp.append(0.0) # Corresponds to the numpy.inf threshold, all samples are assigned to class 0
+    llrSorted = np.concatenate([-np.array([np.inf]), llrSorted])
+
+    # In case of repeated scores, we need to "compact" the Pfn and Pfp arrays (i.e., we need to keep only the value that corresponds to an actual change of the threshold
+    PfnOut = []
+    PfpOut = []
+    thresholdsOut = []
+    for idx in range(len(llrSorted)):
+        if idx == len(llrSorted) - 1 or llrSorted[idx+1] != llrSorted[idx]: # We are indeed changing the threshold, or we have reached the end of the array of sorted scores
+            PfnOut.append(Pfn[idx])
+            PfpOut.append(Pfp[idx])
+            thresholdsOut.append(llrSorted[idx])
+            
+    return np.array(PfnOut), np.array(PfpOut), np.array(thresholdsOut) # we return also the corresponding thresholds
+
+
+def compute_minDCF_binary_fast(llr, classLabels, prior, Cfn, Cfp, returnThreshold=False):
+
+    Pfn, Pfp, th = compute_Pfn_Pfp_allThresholds_fast(llr, classLabels)
+    minDCF = (prior * Cfn * Pfn + (1 - prior) * Cfp * Pfp) / np.minimum(prior * Cfn, (1-prior)*Cfp) # We exploit broadcasting to compute all DCFs for all thresholds
+    idx = np.argmin(minDCF)
+    if returnThreshold:
+        return minDCF[idx], th[idx]
+    else:
+        return minDCF[idx]
+
+
+#note: L must contains only labels 0 and 1!!!!
+#if pT==None we have a normal log reg, otherwise a weighted log ref
+def trainLogRegBinary(DTR, LTR, lambd, pT=None, toPrint=False):
+
+    ZTR = LTR * 2.0 - 1.0 # We do it outside the objective function, since we only need to do it once
+    epsTrue = 1
+    epsFalse = 1
+    if pT!=None:
+        epsTrue = pT / (ZTR>0).sum()
+        epsFalse = (1-pT) / (ZTR<0).sum()
+
+
+    def logreg_obj_with_grad(v): # We compute both the objective and its gradient to speed up the optimization
+        w = v[:-1]
+        b = v[-1]
+        s = np.dot(vcol(w).T, DTR).ravel() + b
+
+        loss = np.logaddexp(0, -ZTR * s)
+        #if we are in normal case, this won't affect. Otherwise multiply for esp
+        loss[ZTR>0] *= epsTrue
+        loss[ZTR<0] *= epsFalse
+        
+        G = -ZTR / (1.0 + np.exp(ZTR * s))
+        G[ZTR > 0] *= epsTrue
+        G[ZTR < 0] *= epsFalse
+        GW = (vrow_arr(G) * DTR).mean(1) + lambd * w.ravel()
+        #but if pT !=None GW must be redefined
+        if pT!=None:
+            GW = (vrow_arr(G) * DTR).sum(1) + lambd * w.ravel()
+
+        Gb = G.mean()
+        if pT!=None:
+            Gb = G.sum()
+            return loss.sum() + lambd / 2 * np.linalg.norm(w)**2, np.hstack([GW, np.array(Gb)])
+        return loss.mean() + lambd / 2 * np.linalg.norm(w)**2, np.hstack([GW, np.array(Gb)])
+
+    vf = scipy.optimize.fmin_l_bfgs_b(logreg_obj_with_grad, x0 = np.zeros(DTR.shape[0]+1))[0]
+    if toPrint and pT==None:
+        print ("Log-reg - lambda = %e - J*(w, b) = %e" % (lambd, logreg_obj_with_grad(vf)[0]))
+    elif toPrint:
+        print ("Weighted Log-reg (pT %e) - lambda = %e - J*(w, b) = %e" % (pT, lambd, logreg_obj_with_grad(vf)[0]))
+    return vf[:-1], vf[-1]
+
 
 # if __name__ == "__main__":
-#     loadFileAndSave('trainData.txt', 'D_exam_train.npy', 'L_exam_train.npy') 
+#     loadFileAndSave('trainData.txt', 'D_exam_train.npy', 'L_exam_train.npy')
+

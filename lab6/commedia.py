@@ -129,6 +129,8 @@ def S1_compute_logLikelihoods(h_clsLogProb, text):
     return logLikelihoodCls
 
 def S1_compute_logLikelihoodMatrix(h_clsLogProb, lTercets, hCls2Idx = None):
+    #notes: 
+    #in hclsLogProb each class rappresent a row and each column rappresent a word -> Cell is the LOG prob that the word is of that class
 
     '''
     Compute the matrix of class-conditional log-likelihoods for each class each tercet in lTercets
@@ -149,6 +151,9 @@ def S1_compute_logLikelihoodMatrix(h_clsLogProb, lTercets, hCls2Idx = None):
         for cls in h_clsLogProb: # We sort the class labels so that rows are ordered according to alphabetical order of labels
             clsIdx = hCls2Idx[cls]
             S[clsIdx, tIdx] = hScores[cls]
+
+    #add to understand if LLRs is from S (scoreMatrix/logLikelihood) -> probInf/probPar => It is not! 
+    llrArrBin = numpy.load('lab7/data/commedia_llr_infpar.npy')
 
     return S
 
@@ -309,7 +314,7 @@ if __name__ == '__main__':
 
     lTercetsEval = lInfEval + lPurEval + lParEval
 
-    S1_model = S1_estimateModel(hlTercetsTrain, eps = 0.001)
+    S1_model = S1_estimateModel(hlTercetsTrain, eps = 0.001) #rpws=classes, columns=words cell=logProb of the word in that class
 
     S1_predictions = compute_classPosteriors(
         S1_compute_logLikelihoodMatrix(
@@ -388,6 +393,11 @@ if __name__ == '__main__':
     labelsEval = numpy.hstack([labelsInf, labelsPar])
 
     print('Binary [inferno vs paradiso] - S1 - Accuracy: %.2f%%' % (compute_accuracy(S1_predictions, labelsEval)*100))
+
+    #add to understand if LLRs is from S1_predictions (posterior) -> probInf/probPar => It is not! (REMEMBER LOG!)
+    llrArrBin = numpy.load('lab7/data/commedia_llr_infpar.npy')
+    #compute log posterior os S1:
+    logProbS1 = numpy.log(S1_predictions[0, :]) - numpy.log(S1_predictions[1, :])
 
 
 

@@ -10,16 +10,16 @@ def load_iris():
 
 def ApplyMVGLab5():
     D, L = load_iris()
-    accML = ut.createAndApplyMVG(D, L, chosenCase='ML')
+    accML, _ = ut.createAndApplyMVG(D, L, chosenCase='ML')
     print("Accuracy for ML solution: %f" % (accML))
-    accNaive = ut.createAndApplyMVG(D, L, chosenCase='naive')
+    accNaive, _  = ut.createAndApplyMVG(D, L, chosenCase='naive')
     print("Accuracy for Naive solution: %f" % (accNaive))
-    accTied = ut.createAndApplyMVG(D, L, chosenCase='tied')
+    accTied, _  = ut.createAndApplyMVG(D, L, chosenCase='tied')
     print("Accuracy for Tied solution: %f" % (accTied))
     #class-problem divsion:
     DReduced = D[:, L!=0]
     LReduced = L[L!=0]
-    accBinary = ut.createAndApplyMVG(DReduced, LReduced, chosenCase='ML')
+    accBinary, _  = ut.createAndApplyMVG(DReduced, LReduced, chosenCase='ML')
     print("Accuracy for binary using ML: %f" % (accBinary))
     accBinaryDiv = ut.computeAccuracyUsingBinaryDivision(DReduced, LReduced, 2, 1, chosenCase='ML')
     print("Accuracy for binary using binary division: %f" % (accBinaryDiv))
