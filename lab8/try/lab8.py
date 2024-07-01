@@ -27,12 +27,12 @@ if __name__ == "__main__":
     for lamb in [1e-3, 1e-1, 1.0]:
         #I want L to be 1 or 0
         w, b = ut.trainLogRegBinary(DT, LT, lamb, toPrint=True) #compute w and b
-        logPosterior = w.T @ DV + b #compute scores on validation
-        previsionArray = (logPosterior>0)*1
+        logPosteriorRatio = w.T @ DV + b #compute scores on validation
+        previsionArray = (logPosteriorRatio>0)*1
         err = previsionArray[LV==previsionArray] / previsionArray.size
 
         prior = LT[LT==1].size / LT.size  #prior
-        ssLLR = logPosterior - np.log(prior/ (1-prior))
+        ssLLR = logPosteriorRatio - np.log(prior/ (1-prior))
         th = -np.log((prior * 1.0) / ((1 - prior) * 1.0))
         previsionArray2 = (ssLLR>th)*1 #should I use this instead?
         #note well: previsionArray1 and previsionArray2 are equivalent! previsionArray2 system is used for minDCF
@@ -50,8 +50,8 @@ if __name__ == "__main__":
         #try with weighted: pT=0.8
         pT=0.8
         w, b = ut.trainLogRegBinary(DT, LT, lamb, toPrint=True, pT=pT)
-        logPosterior = w.T @ DV + b
-        ssLLR = logPosterior - np.log(pT / (1-pT))
+        logPosteriorRatio = w.T @ DV + b
+        ssLLR = logPosteriorRatio - np.log(pT / (1-pT))
         th = -np.log((pT * 1.0) / ((1.0 - pT) * 1.0))
         previsionArray = (ssLLR > th) *1
         confusionMatrix = ut.computeConfusionMatrix(previsionArray, LV)

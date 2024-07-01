@@ -371,9 +371,15 @@ def compute_minDCF_binary_slow(llr, classLabels, prior, Cfn, Cfp, returnThreshol
 
 #hard copied by solution, but I need fast version for the lab:
 def compute_Pfn_Pfp_allThresholds_fast(llr, classLabels):
+
     llrSorter = np.argsort(llr)
-    llrSorted = llr[llrSorter] # We sort the llrs
-    classLabelsSorted = classLabels[llrSorter] # we sort the labels so that they are aligned to the llrs
+    llrSorted = []
+    # classLabelsSorted = []
+    if llrSorter.shape[0]==1:
+        llrSorted = vrow_arr(llr[0, llrSorter]).ravel() 
+    else:
+        llrSorted = llr[llrSorter] # We sort the llrs
+    classLabelsSorted = classLabels[llrSorter].ravel() # we sort the labels so that they are aligned to the llrs
 
     Pfp = []
     Pfn = []
@@ -465,6 +471,97 @@ def trainLogRegBinary(DTR, LTR, lambd, pT=None, toPrint=False):
     elif toPrint:
         print ("Weighted Log-reg (pT %e) - lambda = %e - J*(w, b) = %e" % (pT, lambd, logreg_obj_with_grad(vf)[0]))
     return vf[:-1], vf[-1]
+
+def computeQuadraticX(dataSet):
+    resultMatrix = np.zeros((dataSet.shape[0]**2 + dataSet.shape[0], dataSet.shape[1]))
+    for j in range(dataSet.shape[1]): #j is a sample, so a column
+        x = dataSet[:, j]
+        productColsXAsMatrix = vcol_arr(x) @ vcol_arr(x).T
+        productColsXAsArray = productColsXAsMatrix.ravel()
+        #add productColsXAsArray
+        for i in range(len(productColsXAsArray)): #i is the row
+            resultMatrix[i, j] = productColsXAsArray[i]
+        for i in range(len(x)): #i is the row
+            resultMatrix[i, j] = x[i]
+    return np.array(resultMatrix)
+
+    
+
+def train_dual_SVM_linear(DTR, LTR, C, K = 1):
+    
+    ZTR = LTR * 2.0 - 1.0 # Convert labels to +1/-1
+    DTR_EXT = np.vstack([DTR, np.ones((1,DTR.shape[1])) * K])
+    H = np.dot(DTR_EXT.T, DTR_EXT) * vcol_arr(ZTR) * vrow_arr(ZTR)
+
+    # Dual objective with gradient
+    def fOpt(alpha):
+        Ha = H @ vcol(alpha)
+        loss = 0.5 * (vrow(alpha) @ Ha).ravel() - alpha.sum()
+        grad = Ha.ravel() - np.ones(alpha.size)
+        return loss, grad
+
+    alphaStar, _, _ = scipy.optimize.fmin_l_bfgs_b(fOpt, np.zeros(DTR_EXT.shape[1]), bounds = [(0, C) for i in LTR], factr=1.0)
+    
+    # Primal loss
+    def primalLoss(w_hat):
+        S = (vrow_arr(w_hat) @ DTR_EXT).ravel()
+        return 0.5 * np.linalg.norm(w_hat)**2 + C * np.maximum(0, 1 - ZTR * S).sum()
+
+    # Compute primal solution for extended data matrix
+    w_hat = (vrow_arr(alphaStar) * vrow_arr(ZTR) * DTR_EXT).sum(1)
+    
+    # Extract w and b - alternatively, we could construct the extended matrix for the samples to score and use directly v
+    w, b = w_hat[0:DTR.shape[0]], w_hat[-1] * K # b must be rescaled in case K != 1, since we want to compute w'x + b * K
+
+    primalLoss, dualLoss = primalLoss(w_hat), -fOpt(alphaStar)[0]
+    # print ('SVM - C %e - K %e - primal loss %e - dual loss %e - duality gap %e' % (C, K, primalLoss, dualLoss, primalLoss - dualLoss))
+
+    
+    return w, b, primalLoss, dualLoss
+
+def train_dual_SVM_kernel(DTR, LTR, C, kernelFunc, eps = 1.0):
+
+    ZTR = LTR * 2.0 - 1.0 # Convert labels to +1/-1
+    K = kernelFunc(DTR, DTR) + eps
+    H = vcol_arr(ZTR) * vrow_arr(ZTR) * K
+
+    # Dual objective with gradient
+    def fOpt(alpha):
+        Ha = H @ vcol(alpha)
+        loss = 0.5 * (vrow(alpha) @ Ha).ravel() - alpha.sum()
+        grad = Ha.ravel() - np.ones(alpha.size)
+        return loss, grad
+
+    alphaStar, _, _ = scipy.optimize.fmin_l_bfgs_b(fOpt, np.zeros(DTR.shape[1]), bounds = [(0, C) for i in LTR], factr=1.0)
+
+    # print ('SVM (kernel) - C %e - dual loss %e' % (C, -fOpt(alphaStar)[0]))
+
+    # Function to compute the scores for samples in DTE
+    def fScore(DTE):
+        
+        K = kernelFunc(DTR, DTE) + eps
+        H = vcol_arr(alphaStar) * vcol_arr(ZTR) * np.array(K)
+        return H.sum(0)
+
+    return fScore, -fOpt(alphaStar)[0] # we directly return the function to score a matrix of test samples
+
+def polyKernel(degree, c):
+    
+    def polyKernelFunc(D1, D2):
+        return ((D1.T @ D2) + c) ** degree
+    return polyKernelFunc
+
+def rbfKernel(gamma):
+
+    def rbfKernelFunc(D1, D2):
+        # Fast method to compute all pair-wise distances. Exploit the fact that |x-y|^2 = |x|^2 + |y|^2 - 2 x^T y, combined with broadcasting
+        D1Norms = (D1**2).sum(0)
+        D2Norms = (D2**2).sum(0)
+        Z = vcol_arr(D1Norms) + vrow_arr(D2Norms) - 2 * np.dot(D1.T, D2)
+        return np.exp(-gamma * Z)
+
+    return rbfKernelFunc
+
 
 
 # if __name__ == "__main__":
