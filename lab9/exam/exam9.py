@@ -13,11 +13,11 @@ def loadScoresLinear(DT, LT, DV):
     for c in np.logspace(-5, 0, 11):
         w, b, primalLoss, dualLoss = ut.train_dual_SVM_linear(DT, LT, c, K=k)
         scores = (ut.vrow(w) @ DV + b).ravel()
-        np.save("lab9/exam/save/scoresLinear_" + str(i) + ".npy", scores)
+        np.save("lab9/exam/save/linear/scoresLinear_" + str(i) + ".npy", scores)
         primalLosses.append(primalLoss)
         dualLosses.append(dualLoss[0, 0])
         i+=1
-    np.save("lab9/exam/save/arrLossesLinear.npy", np.vstack((np.array(primalLosses), np.array(dualLosses), np.array(np.logspace(-5, 0, 11)))))
+    np.save("lab9/exam/save/linear/arrLossesLinear.npy", np.vstack((np.array(primalLosses), np.array(dualLosses), np.array(np.logspace(-5, 0, 11)))))
 
     #kernel:
     #kernel d=2, c=1, eps=0, c=1, 
@@ -29,10 +29,10 @@ def loadScoresKernelPoly(DT, LT, DV):
     for C in np.logspace(-5, 0, 11):
         funcScore, dualLoss = ut.train_dual_SVM_kernel(DT, LT, C, kernelFunc, eps)
         scores = funcScore(DV)
-        np.save("lab9/exam/save/scoreKernel_" + str(i) + ".npy", scores)
+        np.save("lab9/exam/save/kernelPoly/scoreKernel_" + str(i) + ".npy", scores)
         dualLosses.append(dualLoss[0, 0])
         i+=1
-    np.save("lab9/exam/save/arrLossesKernel.npy", np.vstack((np.array(dualLosses), np.array(np.logspace(-5, 0, 11)))))
+    np.save("lab9/exam/save/kernelPoly/arrLossesKernel.npy", np.vstack((np.array(dualLosses), np.array(np.logspace(-5, 0, 11)))))
 
 #TODO: function to load with RBF. Differences: 
 def loadScoresKernelRBF(DT, LT, DV):
@@ -46,10 +46,10 @@ def loadScoresKernelRBF(DT, LT, DV):
             kernelFunc = ut.srbfKernel(gamma)
             funcScore, dualLoss = ut.train_dual_SVM_kernel(DT, LT, C, kernelFunc, eps)
             scores = funcScore(DV)
-            np.save("lab9/exam/save/scoreKernelRBF_" + str(i) + ".npy", scores)
+            np.save("lab9/exam/save/kernelRBF/scoreKernelRBF_" + str(i) + ".npy", scores)
             dualLosses.append(dualLoss[0, 0])
             i+=1
-    np.save("lab9/exam/save/arrLossesKernelRBF.npy", np.vstack((np.array(dualLosses), np.array(np.logspace(-5, 0, 11)))))
+    np.save("lab9/exam/save/kernelRBF/arrLossesKernelRBF.npy", np.vstack((np.array(dualLosses), np.array(np.logspace(-5, 0, 11)))))
 
 if __name__ == "__main__":
     #remember:
@@ -60,21 +60,17 @@ if __name__ == "__main__":
 
     k=1.0
     
-    plt.figure()
-    plt.title("DCF acutal/min for linear SVM")
-    plt.xscale('log', base=10)
-    plt.xlabel("value of regulizer C")
-    plt.ylabel("DCF actual/min")
 
     #code to load scores (comment if scores are loaded):
-    # loadScoresLinear(DT, LT, DV)
-    # loadScoresKernelPoly(DT, LT, DV)
+    loadScoresLinear(DT, LT, DV)
+    loadScoresKernelPoly(DT, LT, DV)
+    loadScoresKernelRBF(DT, LT, DV)
 
-    losses = np.load("lab9/exam/save/arrLossesLinear.npy")
+    losses = np.load("lab9/exam/save/linear/arrLossesLinear.npy")
     actualDCFs = []
     minDCFs = []
     for i in range(11):
-        strSave = "lab9/exam/save/scoresLinear_" + str(i) + ".npy"
+        strSave = "lab9/exam/save/linear/scoresLinear_" + str(i) + ".npy"
         scores = np.load(strSave)
         primalLoss = losses[0, i]
         dualLoss = losses[1, i]
@@ -88,17 +84,24 @@ if __name__ == "__main__":
             % (c, k, minDCF, actualDCF,primalLoss, dualLoss, err ))
         actualDCFs.append(actualDCF)
         minDCFs.append(minDCF)
-    plt.scatter(np.ravel(losses[2, :]), actualDCFs, color="red", label = "actual DCF")
+    
+    plt.figure()
+    plt.title("DCF acutal/min for linear SVM")
+    plt.xscale('log', base=10)
+    plt.xlabel("value of regulizer C")
+    plt.ylabel("DCF actual/min")
+
+    plt.scatter(np.ravel(losses[2, :]), actualDCFs, color="red", label="actual DCF")
     plt.scatter(np.ravel(losses[2, :]), minDCFs, color="blue", label="minimum DCF")
 
     #Kernel:
-    arrLosses = np.load("lab9/exam/save/arrLossesKernel.npy")
+    losses = np.load("lab9/exam/save/kernelPoly/arrLossesKernel.npy")
     actualDCFs = []
     minDCFs = []
     for i in range(11):
-        scores = np.load("lab9/exam/save/scoreKernel_" + str(i) + ".npy")
-        dualLoss = arrLosses[0, i]
-        C = arrLosses[1, i]
+        scores = np.load("lab9/exam/save/kernelPoly/scoreKernel_" + str(i) + ".npy")
+        dualLoss = losses[0, i]
+        C = losses[1, i]
         previsionArray = (scores > 0) * 1
         err = 1 - (LV[previsionArray==LV].size / LV.size)
         confusionMatrix = ut.computeConfusionMatrix(previsionArray, LV)
@@ -110,13 +113,13 @@ if __name__ == "__main__":
         minDCFs.append(minDCF)
     #now plot:
     plt.figure()
-    plt.title("DCF acutal/min for kernel poly SVM")
+    plt.title("DCF actual/min for kernel poly SVM")
     plt.xscale('log', base=10)
     plt.xlabel("value of regulizer C")
     plt.ylabel("DCF actual/min")
 
-    plt.scatter(np.ravel(arrLosses[1, :]), actualDCFs, color="red", label = "actual DCF")
-    plt.scatter(np.ravel(arrLosses[1, :]), minDCFs, color="blue", label="minimum DCF")
+    plt.scatter(np.ravel(losses[1, :]), actualDCFs, color="red", label = "actual DCF")
+    plt.scatter(np.ravel(losses[1, :]), minDCFs, color="blue", label="minimum DCF")
 
 
 
