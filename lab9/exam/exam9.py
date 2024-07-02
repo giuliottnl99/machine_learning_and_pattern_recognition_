@@ -220,9 +220,12 @@ if __name__ == "__main__":
                 % (0.0, C, cIndex, minDCF, actualDCF, dualLoss, err))
             actualDCFsMatrix[gammaCount, cIndex] = actualDCF
             minDCFsMatrix[gammaCount, cIndex] = minDCF
-        #for each gamma, a different plot:
-        plt.scatter(np.ravel(losses[losses.shape[0]-1, :]), actualDCFsMatrix[gammaCount, :], color=colorsActDCF[gammaCount], label = "actual DCF for gamma = " + str(gammaRanges[gammaCount]), )
-        plt.scatter(np.ravel(losses[losses.shape[0]-1, :]), minDCFsMatrix[gammaCount, :], color=colorsMinDCF[gammaCount], label = "minimum DCF for gamma = " + str(gammaRanges[gammaCount]))
+        #for each gamma, a different plot (scatter and lines):
+        plt.scatter(np.ravel(losses[losses.shape[0]-1, :]), actualDCFsMatrix[gammaCount, :], color=colorsActDCF[gammaCount] )
+        plt.scatter(np.ravel(losses[losses.shape[0]-1, :]), minDCFsMatrix[gammaCount, :], color=colorsMinDCF[gammaCount])
+        plt.plot(np.ravel(losses[losses.shape[0]-1, :]), actualDCFsMatrix[gammaCount, :], color=colorsActDCF[gammaCount], label = "actual DCF for gamma = " + str(gammaRanges[gammaCount]), linestyle='dashed')
+        plt.plot(np.ravel(losses[losses.shape[0]-1, :]), minDCFsMatrix[gammaCount, :], color=colorsMinDCF[gammaCount], label = "minimum DCF for gamma = " + str(gammaRanges[gammaCount]), linestyle='dashed')
+
     plt.legend()
     plt.show()
     stopDebug = ""

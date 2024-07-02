@@ -127,10 +127,13 @@ def computeAndRevertProj_DT_DV(DT, DV, LT, reducingMatrix, lblTrue, lblFalse):
 
 
 #False on the left, True on the right is the config chosen
-def doBinaryClassification_PCA_LDA(DBinary, LBinary, toPlot=False, toPrint=True, chosenMethod='LDA', dimensionsPCA=2, LValueTrue=1, LValueFalse=0, threshold=None):
+def doBinaryClassification_PCA_LDA(DBinary, LBinary, toPlot=False, toPrint=True, chosenMethod='LDA', dimensionsPCA=2, LValueTrue=1, LValueFalse=0, threshold=None, reduceDataset=False):
     #first of all, remove data where the data label is ==0 keeping 1 and 2 only
     #divide training and test set:
     (DT, LT), (DV, LV) = divideSamplesRandomly(DBinary, LBinary)
+    if reduceDataset:
+        DT = DT[:, ::50]
+        LT = LT[::50]
     #doLDA
     reducingMatrix = None
     projDT = None
@@ -278,8 +281,11 @@ def createAndApplyMVG(D, L, chosenCase='ML'):
     return accuracy, previsionArray
 
 #it is the same as calling createAndApplyMVG but works only for binarys
-def computeAccuracyUsingBinaryDivision_MVG(DBinary, LBinary, labelTrue, labelFalse, chosenCase='ML'):
+def computeAccuracyUsingBinaryDivision_MVG(DBinary, LBinary, labelTrue, labelFalse, chosenCase='ML', reduceDataset=False):
     (DT, LT), (DV, LV) = divideSamplesRandomly(DBinary, LBinary)
+    if reduceDataset:
+        DT = DT[:, ::50]
+        LT = LT[::50]
 
     muAndCovDivided = computeMuAndCovForClass(DT, LT, chosenCase=chosenCase)
     logScoreMatrix, classNamesArr = computeLogScoreMatrix(DV, LV, muAndCovDivided)

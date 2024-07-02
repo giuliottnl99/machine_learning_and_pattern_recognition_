@@ -22,10 +22,8 @@ def logpdf_GAU_ND(x, mu, C):
     
     return component1 + component2 + component3
 
-def plotGraphHistWithGaussian(x, mu, cov, i):
-    plt.figure()
-    plt.title("hist for characteristic %d" %(i))
-    plt.hist(x.ravel(), bins=50, density=True)
+def plotGraphHistWithGaussian(x, mu, cov, i, color, label):
+    plt.hist(x.ravel(), bins=50, density=True, alpha=0.4, color=color, label=label)
     XPlot = np.linspace(-8, 12, 1000)
     plt.plot(XPlot.ravel(), np.exp(logpdf_GAU_ND(XPlot.reshape(1, XPlot.size), mu, cov)))
     
@@ -33,17 +31,30 @@ def plotGraphHistWithGaussian(x, mu, cov, i):
 
 #load all dataset:
 if __name__ == '__main__':
-    transposedMatrix = (np.transpose(loadReport()))[0:-1, :]
+    D, L = np.load("general_utils/D_exam_train.npy"), np.load("general_utils/L_exam_train.npy")
     #plot:
-    for i in range(len(transposedMatrix)):
-        row = transposedMatrix[i, :].reshape(1, len(transposedMatrix[i])) #resize the row
-        mu = row.mean(1).reshape(1, 1)
-        print(mu)
-        cov = ((row-mu) @ (row - mu).T) / row.shape[1]
-        print(cov)
-        plotGraphHistWithGaussian(row, mu, cov, i+1)
-    plt.show()
+    DTrue = D[:, L==1]
+    DFalse = D[:, L==0]
+    for i in range(D.shape[0]): #for each row (feature)
+        plt.figure()
+        plt.title("hist for feature %d" %(i+1))
 
+        rowTrue = DTrue[i, :].reshape(1, len(DTrue[i])) #resize the row
+        mu = rowTrue.mean(1).reshape(1, 1)
+        print(mu)
+        cov = ((rowTrue-mu) @ (rowTrue - mu).T) / rowTrue.shape[1]
+        print(cov)
+        plotGraphHistWithGaussian(rowTrue, mu, cov, i+1, "green", "Genuine sample")
+
+        rowFalse = DFalse[i, :].reshape(1, len(DFalse[i])) #resize the row
+        mu = rowFalse.mean(1).reshape(1, 1)
+        print(mu)
+        cov = ((rowFalse-mu) @ (rowFalse - mu).T) / rowFalse.shape[1]
+        print(cov)
+        plotGraphHistWithGaussian(rowFalse, mu, cov, i+1, "red", "Cunterfeit sample")
+        plt.legend()
+
+    plt.show()
     
 
 
