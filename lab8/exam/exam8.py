@@ -21,7 +21,7 @@ if __name__ == "__main__":
         w, b = ut.trainLogRegBinary(DT, LT, lamb)
         logPosterior = w.T @ DV + b
         #must use empirical! -> % of true samples! CORRECT???
-        pEmpirical = DV[:, LV==0].shape[1] / DV.shape[1]
+        pEmpirical = DV[:, LV==1].shape[1] / DV.shape[1]
         ssLLR = logPosterior - np.log(pEmpirical / (1-pEmpirical))
         th = -np.log((pT * 1.0) / ((1.0 - pT) * 1.0))
         previsionArray = (ssLLR > th) *1
@@ -60,7 +60,7 @@ if __name__ == "__main__":
         w, b = ut.trainLogRegBinary(DTRed, LTRed, lamb)  
         logPosterior = w.T @ DV + b
         #must use empirical! -> % of true samples! 
-        pEmpirical = DV[:, LV==0].shape[1] / DV.shape[1]
+        pEmpirical = DV[:, LV==1].shape[1] / DV.shape[1]
         ssLLR = logPosterior - np.log(pEmpirical / (1-pEmpirical)) 
         th = -np.log((pT * 1.0) / ((1.0 - pT) * 1.0))
         previsionArray = (ssLLR > th) *1
@@ -126,8 +126,8 @@ if __name__ == "__main__":
     arrayYMin = []
     arrayXLambda = []
 
-    DTQuadratic = ut.computeQuadraticX(DT)
-    DVQuadratic = ut.computeQuadraticX(DV)
+    DTQuadratic = ut.computeQuadraticXforLogReg(DT)
+    DVQuadratic = ut.computeQuadraticXforLogReg(DV)
 
     for lamb in np.logspace(-4, 2, 13):
         #first try with pT=0.1
@@ -136,7 +136,7 @@ if __name__ == "__main__":
         w, b = ut.trainLogRegBinary(DTQuadratic, LT, lamb)
         logPosterior = w.T @ DVQuadratic + b
         #can I just use DVQuadratic??
-        pEmpirical = DVQuadratic[:, LV==0].shape[1] / DVQuadratic.shape[1]
+        pEmpirical = DVQuadratic[:, LV==1].shape[1] / DVQuadratic.shape[1]
         ssLLR = logPosterior - np.log(pEmpirical / (1-pEmpirical))
         th = -np.log((pT * 1.0) / ((1.0 - pT) * 1.0))
         previsionArray = (ssLLR > th) *1
@@ -173,7 +173,7 @@ if __name__ == "__main__":
         #we use pT but not for log red
         w, b = ut.trainLogRegBinary(DTCentered, LT, lamb)
         logPosterior = w.T @ DVCentered + b
-        pEmpirical = DVCentered[:, LV==0].shape[1] / DVCentered.shape[1]
+        pEmpirical = DVCentered[:, LV==1].shape[1] / DVCentered.shape[1]
         ssLLR = logPosterior - np.log(pEmpirical / (1-pEmpirical))
         th = -np.log((pT * 1.0) / ((1.0 - pT) * 1.0))
         previsionArray = (ssLLR > th) *1

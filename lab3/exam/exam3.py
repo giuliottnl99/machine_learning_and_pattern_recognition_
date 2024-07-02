@@ -1,6 +1,7 @@
 # import utils as ut
 import numpy as np
 import sys
+sys.path.append('C:\\Users\\giuli\\OneDrive\\Documenti\\poliTo 2024\\machine_learning_and_pattern_recognition\\general_utils\\')
 import utils as ut
 import matplotlib.pyplot as plt
 
@@ -14,7 +15,7 @@ def plot6Directions(DProj, L):
         plt.title('Characteristic number: %d of relevance' % (i+1))
         ut.plotHist(arrGood, c="green", l="good samples", i=10)
         ut.plotHist(arrFake, c="red", l="fake samples", i=10)
-    plt.show()
+        plt.legend()
 
 def computeAndPlotPCA6Dim(D, L, toPlot=False):
     PCACompleteReducingMatrix = ut.computePCA_ReducingMatrix(D, L, dim=6)
@@ -61,3 +62,6 @@ if __name__ == '__main__':
     # maxTh, maxScore = findMaximumThreshold(D, L)
     # print("optimizing threshold is %f with a score of %f" % (maxTh, maxScore*2000))
     applyPCAFirstAndThenLDA(D, L)
+    plt.show()
+
+    stopPlot= ""

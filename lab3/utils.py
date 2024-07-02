@@ -149,12 +149,15 @@ def doBinaryClassification_PCA_LDA(DBinary, LBinary, toPlot=False, toPrint=True,
         plt.title("Training set")
         plotHist(projDT[0, LT==LValueTrue], c="green", i=5, l="True")
         plotHist(projDT[0, LT==LValueFalse], c="red", i=5, l="False")
+        plt.legend()
+
         #then plot validation sample reduced:
         plt.figure()
         plt.title("Validation set")
         plotHist(projDV[0, LV==LValueTrue], c="green", i=5, l="True")
         plotHist(projDV[0, LV==LValueFalse], c="red", i=5, l="False")
-        
+        plt.legend()
+
         plt.show()
     return len(matrixValidSamples) / len(LV)
 

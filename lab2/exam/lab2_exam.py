@@ -59,7 +59,7 @@ def plotAllScattered(trueSampleMatrix, fakeSampleMatrix):
         plt.figure()
         plt.title("scatter: %d - %d" % (i+1, i+2))
         plt.xlabel("datus %d" % (i+1))
-        plt.ylabel=("datus %d" % (i+2))
+        plt.ylabel("datus %d" % (i+2))
         plt.scatter(rowTrue1, rowTrue2, label="Genuine sample", color="green")
         plt.scatter(rowFalse1, rowFalse2, label="Counterfeit sample", color="red")
         plt.legend()

@@ -168,13 +168,14 @@ def doBinaryClassification_PCA_LDA(DBinary, LBinary, toPlot=False, toPrint=True,
         plt.title("Training set")
         plotHist(projDT[0, LT==LValueTrue], c="green", i=5, l="True")
         plotHist(projDT[0, LT==LValueFalse], c="red", i=5, l="False")
+        plt.legend()
         #then plot validation sample reduced:
         plt.figure()
         plt.title("Validation set")
         plotHist(projDV[0, LV==LValueTrue], c="green", i=5, l="True")
         plotHist(projDV[0, LV==LValueFalse], c="red", i=5, l="False")
-        
-        plt.show()
+        plt.legend()
+
     return len(matrixValidSamples) / len(LV)
 
 def computeMuAndCovForClass(D, L, chosenCase='ML'):
@@ -472,7 +473,7 @@ def trainLogRegBinary(DTR, LTR, lambd, pT=None, toPrint=False):
         print ("Weighted Log-reg (pT %e) - lambda = %e - J*(w, b) = %e" % (pT, lambd, logreg_obj_with_grad(vf)[0]))
     return vf[:-1], vf[-1]
 
-def computeQuadraticX(dataSet):
+def computeQuadraticXforLogReg(dataSet):
     resultMatrix = np.zeros((dataSet.shape[0]**2 + dataSet.shape[0], dataSet.shape[1]))
     for j in range(dataSet.shape[1]): #j is a sample, so a column
         x = dataSet[:, j]
@@ -482,7 +483,21 @@ def computeQuadraticX(dataSet):
         for i in range(len(productColsXAsArray)): #i is the row
             resultMatrix[i, j] = productColsXAsArray[i]
         for i in range(len(x)): #i is the row
-            resultMatrix[i, j] = x[i]
+            resultMatrix[i+len(productColsXAsArray), j] = x[i]
+    return np.array(resultMatrix)
+
+def computeQuadraticXforSMV(dataSet):
+    resultMatrix = np.zeros((dataSet.shape[0]**2 + dataSet.shape[0] +1, dataSet.shape[1]))
+    for j in range(dataSet.shape[1]): #j is a sample, so a column
+        x = dataSet[:, j]
+        productColsXAsMatrix = vcol_arr(x) @ vcol_arr(x).T
+        productColsXAsArray = productColsXAsMatrix.ravel()
+        #add productColsXAsArray
+        for i in range(len(productColsXAsArray)): #i is the row
+            resultMatrix[i, j] = productColsXAsArray[i]
+        for i in range(len(x)): #i is the row
+            resultMatrix[i+len(productColsXAsArray), j] = (2**0.5) * x[i]
+        resultMatrix[len(resultMatrix)-1, j] = 1 
     return np.array(resultMatrix)
 
     
@@ -494,7 +509,7 @@ def train_dual_SVM_linear(DTR, LTR, C, K = 1):
     H = np.dot(DTR_EXT.T, DTR_EXT) * vcol_arr(ZTR) * vrow_arr(ZTR)
 
     # Dual objective with gradient
-    def fOpt(alpha):
+    def fOpt(alpha): 
         Ha = H @ vcol(alpha)
         loss = 0.5 * (vrow(alpha) @ Ha).ravel() - alpha.sum()
         grad = Ha.ravel() - np.ones(alpha.size)
