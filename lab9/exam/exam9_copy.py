@@ -53,8 +53,8 @@ if __name__ == "__main__":
     plt.ylabel("DCF actual/min")
 
     #code to load scores (comment if scores are loaded):
-    loadScoresLinear(DT, LT, DV)
-    loadScoresKernel(DT, LT, DV)
+    # loadScoresLinear(DT, LT, DV)
+    # loadScoresKernelPoly(DT, LT, DV)
 
     losses = np.load("lab9/exam/save/arrLossesLinear.npy")
     actualDCFs = []

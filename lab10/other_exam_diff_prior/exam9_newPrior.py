@@ -59,7 +59,7 @@ if __name__ == "__main__":
     #K=1, different values of C, piT=0
     D, L = np.load("general_utils/D_exam_train.npy"), np.load("general_utils/L_exam_train.npy")
     (DT, LT), (DV, LV) = ut.divideSamplesRandomly(D, L)
-    pT=0.1
+    pT=0.5
 
     k=1.0
     DTCentered = DT - np.mean(DT, axis=0)

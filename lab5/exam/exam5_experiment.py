@@ -1,6 +1,6 @@
 import sys
 sys.path.append('C:\\Users\\giuli\\OneDrive\\Documenti\\poliTo 2024\\machine_learning_and_pattern_recognition\\general_utils\\')
-import utils as ut
+import lab5.utils_old as ut
 import numpy as np
 
 

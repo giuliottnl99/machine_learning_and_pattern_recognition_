@@ -17,8 +17,8 @@ if __name__ == "__main__":
     print()
     print("linear case: full dataset")
     for lamb in np.logspace(-4, 2, 13):
-        #first try with pT=0.1
-        pT=0.1 #this is prior without weighted system
+        #first try with pT=0.5
+        pT=0.5 #this is prior without weighted system
         #we use pT but not for log red
         w, b = ut.trainLogRegBinary(DT, LT, lamb)
         logPosterior = w.T @ DV + b
@@ -56,8 +56,8 @@ if __name__ == "__main__":
     print("linear case: reduced dataset")
 
     for lamb in np.logspace(-4, 2, 13):
-        #first try with pT=0.1
-        pT=0.1 #this is prior without weighted system
+        #first try with pT=0.5
+        pT=0.5 #this is prior without weighted system
         #first of all: train with pT 
         w, b = ut.trainLogRegBinary(DTRed, LTRed, lamb)  
         logPosterior = w.T @ DV + b
@@ -95,8 +95,8 @@ if __name__ == "__main__":
     print("prior wrighted logistic regression")
 
     for lamb in np.logspace(-4, 2, 13):
-        #first try with pT=0.1
-        pT=0.1 #this is prior without weighted system
+        #first try with pT=0.5
+        pT=0.5 #this is prior without weighted system
         #first of all: train with pT 
         w, b = ut.trainLogRegBinary(DT, LT, lamb, pT=pT)
         logPosterior = w.T @ DV + b
@@ -141,8 +141,8 @@ if __name__ == "__main__":
     print("quadratic logistic regression, full dataset")
 
     for lamb in np.logspace(-4, 2, 13):
-        #first try with pT=0.1
-        pT=0.1 #this is prior without weighted system
+        #first try with pT=0.5
+        pT=0.5 #this is prior without weighted system
         #we use pT but not for log red
         w, b = ut.trainLogRegBinary(DTQuadratic, LT, lamb)
         logPosterior = w.T @ DVQuadratic + b
@@ -181,8 +181,8 @@ if __name__ == "__main__":
     print("centered case, full dataset")
 
     for lamb in np.logspace(-4, 2, 13):
-        #first try with pT=0.1
-        pT=0.1 #this is prior without weighted system
+        #first try with pT=0.5
+        pT=0.5 #this is prior without weighted system
         #we use pT but not for log red
         w, b = ut.trainLogRegBinary(DTCentered, LT, lamb)
         logPosterior = w.T @ DVCentered + b
